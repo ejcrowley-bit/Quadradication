@@ -14,7 +14,7 @@ const { chromium } = require('playwright');
       if (!s.win) bad.push(`${L.id} ${L.name}: ${s.misfire ? 'misfire' : s.endReason}`);
     }
     for (let i = 0; i < 300; i++) {
-      const L = T.genDrill(i), s = T.simulate(L, T.toStd(L.answer.form, L.answer));
+      const L = T.genDrill(i, ['line', 'factored', 'vertex', 'standard']), s = T.simulate(L, T.toStd(L.answer.form, L.answer));
       if (!s.win) bad.push('drill ' + JSON.stringify(L.answer));
     }
     return bad;

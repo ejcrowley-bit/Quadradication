@@ -1,9 +1,10 @@
 # Trajectory: Quadratic Strike
 
-A sci-fi artillery game for practicing Honors Algebra 2 quadratics. You aim by typing the parabola your plasma shot follows.
+A sci-fi artillery game for practicing algebra. You aim by typing the equation your shot follows: straight-line lasers first (Algebra 1), then parabolas (Algebra 2 quadratics).
 
-- **Campaign (13 missions):** factored form → vertex form → standard form → discriminant → boss.
-- **Endless Drill:** random puzzles across all three forms, with a streak multiplier.
+- **Campaign (21 missions):** Basic Training with straight-line lasers (y = mx + b, Algebra 1) → factored form → vertex form → standard form → discriminant → boss.
+- **Aim guide:** training missions show the full shot path as you type; a menu toggle shows a short aim line everywhere else.
+- **Endless Drill:** random puzzles from the forms unlocked so far (lines first), with a streak multiplier.
 - **Debrief on every miss:** shows where the arc actually went (peak, roots, height at each target).
 - **Hints and walkthroughs:** hints cap the mission at 2 stars; the walkthrough unlocks after 3 misses.
 - **Service Record:** rank, unlockable plasma colors, and a per-skill report (shots, clears, first-shot rate).

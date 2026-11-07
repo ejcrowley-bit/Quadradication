@@ -159,7 +159,7 @@ button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:none;
     <button class="big" data-go="missions">CAMPAIGN</button>
     <button class="big mag" id="drillBtn">ENDLESS DRILL</button>
     <button class="big alt" data-go="record">SERVICE RECORD &amp; ARMORY</button>
-    <button class="ghostbtn" id="muteBtn"></button>
+    <div><button class="ghostbtn" id="assistBtn"></button><button class="ghostbtn" id="muteBtn"></button></div>
   </section>
 
   <!-- MISSIONS -->
@@ -212,6 +212,8 @@ button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:none;
    MATH HELPERS
    ===================================================================== */
 const FORMS = {
+  line:     { label: 'Line', skill: 'linear', slots: ['m','b'],
+              tpl: ['y = ', 'm', 'x + ', 'b'] },
   factored: { label: 'Factored', skill: 'factored', slots: ['a','p','q'],
               tpl: ['y = ', 'a', '(x − ', 'p', ')(x − ', 'q', ')'] },
   vertex:   { label: 'Vertex', skill: 'vertex', slots: ['a','h','k'],
@@ -221,6 +223,7 @@ const FORMS = {
 };
 
 function toStd(form, v) {
+  if (form === 'line') return { a: 0, b: v.m, c: v.b };
   const a = v.a;
   if (form === 'factored') return { a, b: -a * (v.p + v.q), c: a * v.p * v.q };
   if (form === 'vertex')   return { a, b: -2 * a * v.h, c: a * v.h * v.h + v.k };
@@ -245,6 +248,7 @@ function parseNum(str) {
 function coefStr(a) { return a === 1 ? '' : a === -1 ? '−' : fmt(a); }
 function shiftStr(p) { return p === 0 ? 'x' : p < 0 ? `(x + ${fmt(-p)})` : `(x − ${fmt(p)})`; }
 function pretty(form, v) {
+  if (form === 'line') return pretty('standard', { a: 0, b: v.m, c: v.b });
   if (form === 'factored') {
     const a = coefStr(v.a), s1 = shiftStr(v.p), s2 = shiftStr(v.q);
     return `y = ${a}${s1}${s2}`;
@@ -317,6 +321,8 @@ function simulate(level, std) {
    LEVELS
    ===================================================================== */
 const CHAPTERS = [
+  { id: 0, skill: 'linear', name: 'BASIC TRAINING — LASER LINES',
+    blurb: 'Start here. y = mx + b fires a straight laser. b is the height where it crosses x = 0. m is the slope: how far it goes up for each step right.' },
   { id: 1, skill: 'factored', name: 'BOOT CAMP — FACTORED FORM',
     blurb: 'y = a(x − p)(x − q). The shot is at ground level (y = 0) at x = p and x = q.' },
   { id: 2, skill: 'vertex', name: 'APEX OPS — VERTEX FORM',
@@ -328,11 +334,84 @@ const CHAPTERS = [
   { id: 5, skill: 'boss', name: 'BOSS — THE DREADNOUGHT', blurb: 'Every form is unlocked. Pick your weapon.' },
 ];
 
+function chap(L) { return CHAPTERS.find(c => c.id === L.ch); }
 const LEVELS = [
-  { id: 'L1', ch: 1, name: 'First Contact', forms: ['factored'], lock: { a: -0.5 },
+  { id: 'B1', ch: 0, name: 'Point Blank', forms: ['line'], lock: { m: 0 }, assist: true,
+    view: { xmin: -1, xmax: 8, ymin: -1, ymax: 8 },
+    cannon: { x: 0, y: 3 }, targets: [{ x: 6, y: 3, type: 'drone' }],
+    brief: 'Your laser fires in a straight line from your cannon. A drone hovers at (6, 3). The slope is locked at 0, so the laser is flat. Watch the dotted aim line as you type.',
+    lesson: 'In <span class="math">y = mx + b</span>, <b>b</b> is the height where the line crosses <span class="math">x = 0</span>. Your cannon sits at x = 0, so b = your cannon\'s height.',
+    hints: ['With m = 0 the laser stays at height b the whole way across.', 'The drone is at height 3, and so is your cannon. b = 3.'],
+    walk: ['m = 0 means a flat line.', 'Cannon at (0, 3), so b = 3.', 'y = 3'],
+    answer: { form: 'line', m: 0, b: 3 } },
+
+  { id: 'B2', ch: 0, name: 'Uphill', forms: ['line'], lock: { b: 0 }, assist: true,
+    view: { xmin: -1, xmax: 7, ymin: -1, ymax: 8 },
+    cannon: { x: 0, y: 0 }, targets: [{ x: 4, y: 4, type: 'drone' }],
+    brief: 'Drone at (4, 4). Your cannon is at (0, 0), so b is locked at 0. Set the slope.',
+    lesson: '<b>Slope m = rise ÷ run.</b> Count how far UP the target is, then divide by how far RIGHT it is.',
+    hints: ['From your cannon to the drone: 4 right, 4 up.', 'Slope = rise ÷ run = 4 ÷ 4.'],
+    walk: ['Run (right): 4. Rise (up): 4.', 'm = 4 ÷ 4 = 1.', 'y = x'],
+    answer: { form: 'line', m: 1, b: 0 } },
+
+  { id: 'B3', ch: 0, name: 'Steep Shot', forms: ['line'], lock: { b: 0 }, assist: true,
+    view: { xmin: -1, xmax: 6, ymin: -1, ymax: 10 },
+    cannon: { x: 0, y: 0 }, targets: [{ x: 2, y: 6, type: 'drone' }, { x: 3, y: 9, type: 'drone' }],
+    brief: 'Two drones stacked up a steep line. Take both with one laser.',
+    lesson: 'A bigger slope means a steeper line. Slope 3 means "up 3 for every 1 step right."',
+    hints: ['To the first drone: 2 right, 6 up.', '6 ÷ 2 = 3.'],
+    walk: ['Run 2, rise 6.', 'm = 6 ÷ 2 = 3.', 'Check the second drone: 3 × 3 = 9 ✓', 'y = 3x'],
+    answer: { form: 'line', m: 3, b: 0 } },
+
+  { id: 'B4', ch: 0, name: 'Downhill', forms: ['line'],
+    view: { xmin: -1, xmax: 6, ymin: -1, ymax: 10 },
+    cannon: { x: 0, y: 8 }, targets: [{ x: 4, y: 0, type: 'tank' }],
+    brief: 'You\'re up on an 8-high tower. The tank is on the ground at (4, 0). Both numbers are on you now.',
+    lesson: 'Going <b>down</b> as you move right means the slope is <b>negative</b>.',
+    hints: ['b = 8 (your tower height). To reach the tank you go 4 right and 8 DOWN.', 'Down 8 means rise = −8. Slope = −8 ÷ 4.'],
+    walk: ['b = 8.', 'Run 4, rise −8.', 'm = −8 ÷ 4 = −2.', 'y = −2x + 8'],
+    answer: { form: 'line', m: -2, b: 8 } },
+
+  { id: 'B5', ch: 0, name: 'Gentle Slope', forms: ['line'],
+    view: { xmin: -1, xmax: 8, ymin: -1, ymax: 7 },
+    cannon: { x: 0, y: 1 }, targets: [{ x: 6, y: 4, type: 'drone' }],
+    brief: 'The drone at (6, 4) is far away but not very high. This one needs a fraction.',
+    lesson: 'Slopes can be fractions. Type <span class="math">1/2</span> or <span class="math">0.5</span>; both work.',
+    hints: ['b = 1. From (0, 1) to (6, 4): 6 right, 3 up.', '3 ÷ 6 = 1/2.'],
+    walk: ['b = 1.', 'Run 6, rise 3.', 'm = 3 ÷ 6 = 0.5.', 'y = 0.5x + 1'],
+    answer: { form: 'line', m: 0.5, b: 1 } },
+
+  { id: 'B6', ch: 0, name: 'Wall Hop', forms: ['line'],
+    view: { xmin: -1, xmax: 6, ymin: -1, ymax: 12 },
+    cannon: { x: 0, y: 2 }, targets: [{ x: 4, y: 10, type: 'drone' }], walls: [{ x: 3, h: 6 }],
+    brief: 'A 6-high wall stands at x = 3. Hit the drone at (4, 10) over it.',
+    lesson: 'To check any point on your line, plug in its x. If <span class="math">y = 2x + 2</span>, then at x = 3, y = 2(3) + 2 = 8.',
+    hints: ['b = 2. From (0, 2) to (4, 10): 4 right, 8 up.', '8 ÷ 4 = 2. Check the wall: at x = 3, y = 2(3) + 2 = 8, which is over 6.'],
+    walk: ['b = 2.', 'Run 4, rise 8 → m = 2.', 'At the wall: 2(3) + 2 = 8 > 6 ✓', 'y = 2x + 2'],
+    answer: { form: 'line', m: 2, b: 2 } },
+
+  { id: 'B7', ch: 0, name: 'Two in a Row', forms: ['line'],
+    view: { xmin: -1, xmax: 6, ymin: -1, ymax: 9 },
+    cannon: { x: 0, y: 1 }, targets: [{ x: 2, y: 4, type: 'drone' }, { x: 4, y: 7, type: 'drone' }],
+    brief: 'Two drones lined up. One laser, two kills.',
+    lesson: 'A line has the <b>same slope everywhere</b>. If it\'s lined up with the first drone, it hits the second one too.',
+    hints: ['b = 1. From the cannon to the first drone: 2 right, 3 up.', 'Slope = 3 ÷ 2 = 1.5 (or 3/2).'],
+    walk: ['b = 1.', 'Run 2, rise 3 → m = 1.5.', 'Check drone 2: 1.5(4) + 1 = 7 ✓', 'y = 1.5x + 1'],
+    answer: { form: 'line', m: 1.5, b: 1 } },
+
+  { id: 'B8', ch: 0, name: 'Off Center', forms: ['line'],
+    view: { xmin: -4, xmax: 6, ymin: -1, ymax: 8 },
+    cannon: { x: -2, y: 0 }, targets: [{ x: 2, y: 4, type: 'drone' }],
+    brief: 'Final training test. Your cannon moved to (−2, 0), so it\'s NOT at x = 0 anymore.',
+    lesson: 'b is still where the line crosses x = 0. Find the slope first, then plug your cannon\'s point into <span class="math">y = mx + b</span> to solve for b.',
+    hints: ['From (−2, 0) to (2, 4): 4 right, 4 up, so m = 1.', 'Plug in your cannon: 0 = 1(−2) + b. Solve for b.'],
+    walk: ['Run 4, rise 4 → m = 1.', '0 = 1(−2) + b → b = 2.', 'y = x + 2'],
+    answer: { form: 'line', m: 1, b: 2 } },
+
+  { id: 'L1', ch: 1, name: 'First Contact', forms: ['factored'], lock: { a: -0.5 }, assist: true,
     view: { xmin: -5, xmax: 7, ymin: -1, ymax: 10 },
     cannon: { x: -3, y: 0 }, targets: [{ x: 5, y: 0, type: 'tank' }],
-    brief: 'An enemy tank is parked at x = 5. Your plasma cannon sits on the ground at x = −3.',
+    brief: 'New weapon: the plasma mortar fires in an arc (a parabola). An enemy tank is parked at x = 5. Your cannon sits on the ground at x = −3. Aim line is on for this one.',
     lesson: 'In <span class="math">y = a(x − p)(x − q)</span>, the shot is on the ground (<span class="math">y = 0</span>) when <span class="math">x = p</span> or <span class="math">x = q</span>. Those are the <b>roots</b>. Launch from one root and land on the other.',
     hints: ['The shot starts on the ground and lands on the ground. Where is a(x − p)(x − q) equal to 0?',
             'y = 0 when x = p or x = q. Your cannon is at x = −3 and the tank is at x = 5.'],
@@ -468,10 +547,25 @@ LEVELS.forEach((L, i) => { L.index = i; });
 /* ---------- Endless drill generator ---------- */
 function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function genDrill(n) {
-  const form = ['factored', 'vertex', 'standard'][n % 3];
+function drillPool() {
+  const p = ['line'];
+  if (S.stars.L1) p.push('factored');
+  if (S.stars.L5) p.push('vertex');
+  if (S.stars.L8) p.push('standard');
+  return p;
+}
+function genDrill(n, pool) {
+  pool = pool || drillPool();
+  const form = pool[n % pool.length];
   for (let tries = 0; tries < 500; tries++) {
     const a = pick([-0.25, -0.5, -1, -2]);
+    if (form === 'line') {
+      const m = pick([-2, -1, -0.5, 0.5, 1, 1.5, 2, 3]), b = rnd(0, 8), x1 = rnd(2, 6);
+      if (m % 1 !== 0 && x1 % 2 !== 0) continue;
+      const y1 = m * x1 + b;
+      if (y1 < 0 || y1 > 11) continue;
+      return mkDrill(form, { m, b }, { x: 0, y: b }, [{ x: x1, y: y1, type: y1 === 0 ? 'tank' : 'drone' }], -1, x1 + 2, Math.max(b, y1));
+    }
     if (form === 'factored') {
       const p = rnd(-6, 0), q = p + rnd(2, 10);
       const peak = -a * ((q - p) / 2) ** 2;
@@ -494,8 +588,9 @@ function genDrill(n) {
   }
 }
 function mkDrill(form, ans, cannon, targets, xmin, xmax, peak) {
-  const names = { factored: 'Root Strike', vertex: 'Peak Strike', standard: 'Tower Strike' };
+  const names = { line: 'Laser Strike', factored: 'Root Strike', vertex: 'Peak Strike', standard: 'Tower Strike' };
   const lessons = {
+    line: 'b = your cannon height (it sits at x = 0). Slope m = rise ÷ run from your cannon to the target.',
     factored: 'Roots = where y = 0 (cannon and tank). Then use the drone to find a.',
     vertex: 'The drone is the peak: (h, k). Use your cannon to find a.',
     standard: 'c = your tower height. Peak x = −b / (2a). Use two points to find a and b.',
@@ -525,10 +620,11 @@ const SCOPE_COST = 30;
 const SAVE_KEY = 'trajectory-qs-v1';
 function freshSave() {
   return { xp: 0, credits: 90, stars: {}, color: 'cyan', muted: false, bestStreak: 0,
-    stats: { factored: { s: 0, w: 0, f: 0 }, vertex: { s: 0, w: 0, f: 0 }, standard: { s: 0, w: 0, f: 0 }, discriminant: { s: 0, w: 0, f: 0 }, boss: { s: 0, w: 0, f: 0 }, drill: { s: 0, w: 0, f: 0 } } };
+    assist: true,
+    stats: { linear: { s: 0, w: 0, f: 0 }, factored: { s: 0, w: 0, f: 0 }, vertex: { s: 0, w: 0, f: 0 }, standard: { s: 0, w: 0, f: 0 }, discriminant: { s: 0, w: 0, f: 0 }, boss: { s: 0, w: 0, f: 0 }, drill: { s: 0, w: 0, f: 0 } } };
 }
 let S = freshSave();
-try { const raw = localStorage.getItem(SAVE_KEY); if (raw) S = Object.assign(freshSave(), JSON.parse(raw)); } catch (e) {}
+try { const raw = localStorage.getItem(SAVE_KEY); if (raw) { S = Object.assign(freshSave(), JSON.parse(raw)); S.stats = Object.assign(freshSave().stats, S.stats); } } catch (e) {}
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 function rankIndex(xp) { let r = 0; RANKS.forEach((R, i) => { if (xp >= R[0]) r = i; }); return r; }
 function plasmaColor(t) {
@@ -596,8 +692,10 @@ function renderMenu() {
     <div class="xpbar"><div style="width:${pct}%"></div></div>
     <div class="small">${S.xp} XP${nxt ? ` · ${nxt - S.xp} to ${RANKS[ri + 1][1]}` : ' · MAX RANK'} · <span style="color:var(--gold)">${S.credits} ¢</span> · ${done}/${LEVELS.length} missions</div></div>`;
   $('#muteBtn').textContent = S.muted ? '🔇 Sound off' : '🔊 Sound on';
+  $('#assistBtn').textContent = S.assist ? '🎯 Aim guide on' : '🎯 Aim guide off';
 }
 $('#muteBtn').addEventListener('click', () => { S.muted = !S.muted; save(); renderMenu(); SFX.click(); });
+$('#assistBtn').addEventListener('click', () => { S.assist = !S.assist; save(); renderMenu(); SFX.click(); });
 
 function unlocked(L) { return L.index === 0 || !!S.stars[LEVELS[L.index - 1].id]; }
 function starStr(n) { return '★'.repeat(n) + '<span style="color:#2a3352">' + '★'.repeat(3 - n) + '</span>'; }
@@ -618,7 +716,7 @@ function renderMissions() {
 }
 function renderRecord() {
   const ri = rankIndex(S.xp);
-  const names = { factored: 'Factored form', vertex: 'Vertex form', standard: 'Standard form', discriminant: 'Discriminant', boss: 'Boss fights', drill: 'Endless drill' };
+  const names = { linear: 'Lines (y = mx + b)', factored: 'Factored form', vertex: 'Vertex form', standard: 'Standard form', discriminant: 'Discriminant', boss: 'Boss fights', drill: 'Endless drill' };
   let h = `<div class="rankcard" style="width:100%">${badgeSVG(ri)}<div class="rankinfo"><div class="rankname">${RANKS[ri][1].toUpperCase()}</div><div class="small">${S.xp} XP · ${S.credits} credits · best drill streak ${S.bestStreak}</div></div></div>`;
   h += `<div class="sec">ARMORY: PLASMA COLOR</div><div class="small">Rank up to unlock more.</div><div class="swatches">`;
   COLORS.forEach(c => {
@@ -677,7 +775,7 @@ function initInputs() {
 }
 function updateHUD() {
   const L = G.L;
-  $('#hudT1').textContent = G.drill ? `ENDLESS DRILL · STREAK ${G.streak}` : L.boss ? 'BOSS FIGHT' : `MISSION ${L.index + 1} · ${CHAPTERS[L.ch - 1].name.split(' — ')[1]}`;
+  $('#hudT1').textContent = G.drill ? `ENDLESS DRILL · STREAK ${G.streak}` : L.boss ? 'BOSS FIGHT' : `MISSION ${L.index + 1} · ${chap(L).name.split(' — ')[1]}`;
   $('#hudT2').textContent = L.name;
   $('#hudShots').textContent = `SHOTS ${G.shots}`;
   $('#hudCredits').textContent = `${S.credits} ¢`;
@@ -797,7 +895,7 @@ function fire() {
   const std = toStd(G.form, v);
   const sim = simulate(G.L, std);
   G.shots++; updateHUD();
-  const sk = G.drill ? 'drill' : CHAPTERS[G.L.ch - 1].skill;
+  const sk = G.drill ? 'drill' : chap(G.L).skill;
   S.stats[sk].s++; save();
   G.dead = new Set(); G.particles = [];
   $('#debrief').classList.add('hidden');
@@ -812,12 +910,14 @@ function fire() {
     onMiss(sim, std, v);
     return;
   }
-  SFX.fire(); buzz(20);
+  const isLine = G.form === 'line';
+  if (isLine) { tone('square', 2200, 500, 0.2, 0.08); noise(0.1, 0.15, 4000); } else SFX.fire();
+  buzz(20);
   // precompute screen-space path for animation
   const pts = sim.path.map(p => w2s(p.x, p.y));
   const cum = [0];
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-  G.anim = { sim, std, v, pts, cum, t0: performance.now(), speed: Math.max(500, W * 1.15), nextHit: 0, idx: 0 };
+  G.anim = { sim, std, v, pts, cum, t0: performance.now(), speed: Math.max(500, W * 1.15) * (isLine ? 2.2 : 1), nextHit: 0, idx: 0, line: isLine };
   renderEq();
 }
 function part(x, y, color, spd = 1) {
@@ -876,7 +976,8 @@ function onMiss(sim, std, v) {
   if (G.drill) { G.streak = 0; updateHUD(); }
   const L = G.L, f = makeF(std), lines = [];
   if (sim.misfire) {
-    lines.push(`<b>Misfire.</b> At x = ${fmt(L.cannon.x)} your arc is at y = ${fmt(f(L.cannon.x))}, but your cannon sits at y = ${fmt(L.cannon.y)}. The arc has to pass through your cannon.`);
+    const what = G.ghost && G.ghost.form === 'line' ? 'line' : 'arc';
+    lines.push(`<b>Misfire.</b> At x = ${fmt(L.cannon.x)} your ${what} is at y = ${fmt(f(L.cannon.x))}, but your cannon sits at y = ${fmt(L.cannon.y)}. Your shot has to start from your cannon.`);
   } else if (sim.endReason === 'wall') {
     const w = sim.blocker; lines.push(`<b>Blocked.</b> At the wall (x = ${fmt(w.x)}) your shot was only at y = ${fmt(f(w.x))}. The wall is ${fmt(w.h)} high.`);
   } else if (sim.endReason === 'barrier') {
@@ -890,7 +991,10 @@ function onMiss(sim, std, v) {
       lines.push(`Missed the ${targetName(t).toLowerCase()} at (${fmt(t.x)}, ${fmt(t.y)}). At x = ${fmt(t.x)} your arc is at y = ${fmt(f(t.x))}.`);
     });
   }
-  if (std.a > 0) lines.push(`Your a is positive, so the parabola opens <b>up</b> like a U. A shot that arcs over needs a <b>negative</b> a.`);
+  if (G.ghost && G.ghost.form === 'line') {
+    const m = std.b, dirTxt = m === 0 ? 'flat (slope 0)' : m > 0 ? `slope ${fmt(m)}, going up ${fmt(m)} for every 1 step right` : `slope ${fmt(m)}, going down ${fmt(-m)} for every 1 step right`;
+    lines.push(`Your laser: ${dirTxt}, crossing x = 0 at y = ${fmt(std.c)}.`);
+  } else if (std.a > 0) lines.push(`Your a is positive, so the parabola opens <b>up</b> like a U. A shot that arcs over needs a <b>negative</b> a.`);
   else if (std.a === 0) lines.push(`a = 0 makes a straight line, not a parabola.`);
   else {
     const vx = -std.b / (2 * std.a), vy = f(vx), D = std.b * std.b - 4 * std.a * std.c;
@@ -910,7 +1014,7 @@ function onWin(sim) {
   if (!G) return;
   G.done = true;
   SFX.win();
-  const L = G.L, sk = G.drill ? 'drill' : CHAPTERS[L.ch - 1].skill;
+  const L = G.L, sk = G.drill ? 'drill' : chap(L).skill;
   S.stats[sk].w++; if (G.shots === 1) S.stats[sk].f++;
   const before = rankIndex(S.xp);
   const crits = sim.hits.filter(h => h.headshot).length;
@@ -1059,6 +1163,9 @@ function draw(now, dt) {
   // ghost of last shot (full curve) when idle
   if (G.ghost && !G.anim && !G.done) { ctx.globalAlpha = 0.28; drawCurve(G.ghost.std, '#9fb3e6', [3, 6], 1.5); ctx.globalAlpha = 1; }
 
+  // aim preview: full on training missions, short guide when the menu toggle is on
+  if (!G.anim && !G.done && (L.assist || S.assist)) drawAim(pc);
+
   // targets
   L.targets.forEach((t, i) => drawTarget(t, G.dead.has(i), now));
 
@@ -1069,13 +1176,14 @@ function draw(now, dt) {
   if (G.anim) {
     const A = G.anim, i = A.idx;
     ctx.lineCap = 'round';
-    for (let k = Math.max(1, i - 60); k <= i; k++) {
+    if (A.line) { ctx.shadowColor = pc; ctx.shadowBlur = 16; }
+    for (let k = A.line ? 1 : Math.max(1, i - 60); k <= i; k++) {
       const p0 = A.pts[k - 1], p1 = A.pts[k];
-      ctx.globalAlpha = (k - (i - 60)) / 60;
+      ctx.globalAlpha = A.line ? 0.9 : (k - (i - 60)) / 60;
       ctx.strokeStyle = pc; ctx.lineWidth = 4 * ctx.globalAlpha + 1;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     const p = A.pts[i];
     ctx.fillStyle = '#fff'; ctx.shadowColor = pc; ctx.shadowBlur = 24;
     ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
@@ -1115,6 +1223,25 @@ function drawCurve(std, color, dash, lw) {
     const p = w2s(x, y); started ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); started = true;
   }
   ctx.stroke(); ctx.setLineDash([]);
+}
+function drawAim(pc) {
+  const v = readValues(); if (!v) return;
+  const std = toStd(G.form, v), key = G.form + JSON.stringify(v);
+  if (G.aimKey !== key) { G.aimKey = key; G.aimSim = simulate(G.L, std); }
+  const sim = G.aimSim;
+  if (sim.misfire) {
+    if (G.L.assist) { ctx.globalAlpha = 0.5; drawCurve(std, '#ff4058', [4, 6], 1.5); ctx.globalAlpha = 1;
+      const c = w2s(G.L.cannon.x, G.L.cannon.y); label('✕ misses your cannon', c.x + 75, c.y + 22, '#ff4058'); }
+    return;
+  }
+  const c = G.L.cannon, maxDx = G.L.assist ? Infinity : 1.5;
+  ctx.setLineDash([5, 6]); ctx.strokeStyle = pc; ctx.lineWidth = 2; ctx.globalAlpha = G.L.assist ? 0.6 : 0.45;
+  ctx.beginPath();
+  for (let i = 0; i < sim.path.length; i++) {
+    const p = sim.path[i]; if (Math.abs(p.x - c.x) > maxDx) break;
+    const sp = w2s(p.x, p.y); i ? ctx.lineTo(sp.x, sp.y) : ctx.moveTo(sp.x, sp.y);
+  }
+  ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
 }
 function drawTarget(t, dead, now) {
   const p = w2s(t.x, t.y);
