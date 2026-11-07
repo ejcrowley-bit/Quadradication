@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<title>Trajectory: Quadratic Strike</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05070f; --panel:#0c1222; --panel2:#111a30; --line:#1f2c4d;
+  --cyan:#29e7ff; --mag:#ff3df2; --gold:#ffc94a; --red:#ff4058; --green:#3dff9a;
+  --text:#d9e6ff; --dim:#7d8db3; --plasma:#29e7ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Rajdhani,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:none;color:inherit}
+#app{position:fixed;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.screen{position:absolute;inset:0;padding:inherit;display:none;flex-direction:column}
+.screen.active{display:flex}
+.hidden{display:none!important}
+.orb{font-family:Orbitron,system-ui,sans-serif;letter-spacing:.06em}
+
+/* ---------- menu ---------- */
+#menu{align-items:center;justify-content:center;gap:14px;padding:24px;
+  background:radial-gradient(ellipse at 50% 20%,#14245a 0%,#05070f 60%)}
+.logo{font-family:Orbitron;font-weight:900;font-size:clamp(34px,11vw,64px);letter-spacing:.08em;
+  background:linear-gradient(180deg,#fff 0%,var(--cyan) 60%,#0a6b85 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(41,231,255,.45));text-align:center;line-height:1}
+.sub{font-family:Orbitron;font-weight:600;color:var(--mag);letter-spacing:.35em;font-size:13px;margin-top:-6px;text-align:center}
+.rankcard{width:min(420px,100%);background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;gap:14px;align-items:center;margin:8px 0}
+.badge{width:52px;height:52px;flex:none}
+.rankinfo{flex:1;min-width:0}
+.rankname{font-family:Orbitron;font-weight:800;font-size:16px}
+.xpbar{height:8px;background:#0a1020;border-radius:6px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--line)}
+.xpbar>div{height:100%;background:linear-gradient(90deg,var(--cyan),var(--mag));box-shadow:0 0 10px var(--cyan)}
+.small{font-size:13px;color:var(--dim)}
+.big{width:min(420px,100%);padding:16px;border-radius:12px;font-family:Orbitron;font-weight:800;font-size:17px;letter-spacing:.12em;
+  background:linear-gradient(180deg,#14d7f0,#0a8fb0);color:#021018;box-shadow:0 0 22px rgba(41,231,255,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+.big.alt{background:linear-gradient(180deg,#2a3a66,#18234a);color:var(--text);box-shadow:none;border:1px solid var(--line)}
+.big.mag{background:linear-gradient(180deg,#ff6af5,#b0139f);color:#1a0016;box-shadow:0 0 22px rgba(255,61,242,.35)}
+.big:active{transform:translateY(1px) scale(.99)}
+.ghostbtn{background:transparent;color:var(--dim);font-size:15px;padding:8px 12px}
+
+/* ---------- generic list screens ---------- */
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.topbar h2{margin:0;font-family:Orbitron;font-size:16px;letter-spacing:.12em;flex:1}
+.back{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700;font-size:15px}
+.scroll{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.chapter{margin:4px 0 18px}
+.chapter h3{font-family:Orbitron;font-size:13px;letter-spacing:.18em;color:var(--mag);margin:0 0 4px}
+.chapter p{margin:0 0 10px;color:var(--dim);font-size:15px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mcard{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left}
+.mcard .num{font-family:Orbitron;font-size:11px;color:var(--dim);letter-spacing:.15em}
+.mcard .nm{font-weight:700;font-size:17px;margin:2px 0 6px}
+.mcard .st{color:var(--gold);letter-spacing:2px;font-size:16px}
+.mcard.locked{opacity:.4}
+.mcard.boss{border-color:#5a1830;background:linear-gradient(180deg,#2a0f22,#150812)}
+.mcard.boss .num{color:var(--red)}
+.stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:16px}
+.stat b{font-family:Orbitron;font-size:14px}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 18px}
+.sw{width:64px;padding:8px 4px;border-radius:10px;background:var(--panel2);border:2px solid var(--line);font-size:12px;text-align:center}
+.sw i{display:block;width:26px;height:26px;border-radius:50%;margin:0 auto 4px}
+.sw.sel{border-color:#fff}
+.sw.lock{opacity:.35}
+.sec{font-family:Orbitron;font-size:12px;letter-spacing:.18em;color:var(--cyan);margin:18px 0 4px}
+
+/* ---------- game ---------- */
+#game{background:var(--bg)}
+.hud{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);min-height:46px}
+.hud .back{padding:6px 10px}
+.hud .title{flex:1;min-width:0}
+.hud .title .t1{font-family:Orbitron;font-size:10px;color:var(--dim);letter-spacing:.18em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .title .t2{font-weight:700;font-size:17px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-family:Orbitron;font-size:12px;padding:5px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+.pill.cr{color:var(--gold)}
+.gamebody{flex:1;display:flex;flex-direction:column;min-height:0}
+.field{position:relative;flex:1;min-height:200px}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#killfeed{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-end;pointer-events:none}
+.kf{background:rgba(5,7,15,.75);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;animation:kfin .25s ease-out}
+.kf .y{color:var(--cyan)} .kf .e{color:var(--red)} .kf .hs{color:var(--gold)}
+@keyframes kfin{from{transform:translateX(30px);opacity:0}}
+#bossbar{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:min(60%,320px);pointer-events:none}
+#bossbar .lbl{font-family:Orbitron;font-size:10px;color:var(--red);letter-spacing:.2em;text-align:center;margin-bottom:3px}
+#bossbar .bar{display:flex;gap:3px;height:9px}
+#bossbar .bar i{flex:1;background:var(--red);box-shadow:0 0 8px var(--red);border-radius:2px;transition:opacity .3s}
+#bossbar .bar i.dead{opacity:.15;box-shadow:none}
+#debrief{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(10,14,28,.94);border:1px solid #5a2030;border-left:4px solid var(--red);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.3;max-height:60%;overflow:auto}
+#debrief h4{margin:0 0 4px;font-family:Orbitron;font-size:12px;letter-spacing:.18em;color:var(--red)}
+#debrief ul{margin:0;padding-left:18px}
+#debrief li{margin:3px 0}
+#debrief .x{position:absolute;top:6px;right:8px;background:transparent;color:var(--dim);font-size:18px;padding:2px 6px}
+#debrief .walk{margin-top:8px;background:var(--gold);color:#201400;border-radius:8px;padding:6px 10px;font-weight:700;font-size:14px}
+
+.controls{background:var(--panel);border-top:1px solid var(--line);padding:8px 10px 10px;display:flex;flex-direction:column;gap:7px}
+#formTabs{display:flex;gap:6px}
+#formTabs button{flex:1;padding:6px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--dim)}
+#formTabs button.on{color:#021018;background:var(--cyan);border-color:var(--cyan)}
+#eq{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px;font-size:22px;font-weight:700;min-height:44px;font-family:Rajdhani}
+#eq .slot{min-width:46px;padding:4px 6px;border-radius:8px;background:#060a16;border:2px solid var(--line);text-align:center;font-size:21px;font-weight:700;color:#fff;line-height:1.15}
+#eq .slot .ph{color:#3e4b6e;font-size:16px}
+#eq .slot.on{border-color:var(--cyan);box-shadow:0 0 12px rgba(41,231,255,.5)}
+#eq .slot.lock{border-style:dashed;color:var(--dim);background:transparent}
+#eq .slot.bad{border-color:var(--red)}
+#pretty{text-align:center;color:var(--dim);font-size:15px;min-height:18px;margin-top:-4px}
+#pretty b{color:var(--cyan)}
+.row{display:flex;gap:6px}
+.actions button{padding:10px 6px;border-radius:10px;font-weight:700;font-size:15px;background:var(--panel2);border:1px solid var(--line)}
+#intelBtn{flex:1} #scopeBtn{flex:1}
+#fireBtn{flex:1.6;font-family:Orbitron;font-weight:900;letter-spacing:.2em;font-size:17px;color:#1a0016;background:linear-gradient(180deg,#ff6af5,#c0169f);border:none;box-shadow:0 0 18px rgba(255,61,242,.45)}
+#fireBtn:disabled{opacity:.4;box-shadow:none}
+.keypad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.keypad button{padding:10px 0;border-radius:9px;background:#18233f;border:1px solid var(--line);font-size:20px;font-weight:700}
+.keypad button:active{background:#24345e}
+.keypad .fn{color:var(--cyan);font-size:16px}
+
+@media (min-width:860px) and (orientation:landscape){
+  .gamebody{flex-direction:row}
+  .controls{width:380px;border-top:none;border-left:1px solid var(--line);justify-content:center}
+  .keypad button{padding:14px 0}
+}
+@media (max-height:640px) and (orientation:portrait){
+  .keypad button{padding:7px 0;font-size:18px}
+  .actions button{padding:8px 6px}
+}
+
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;background:rgba(2,4,10,.78);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10;backdrop-filter:blur(3px)}
+.card{width:min(460px,100%);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#121c38,#0a1022);border:1px solid #2b3d6e;border-radius:16px;padding:18px;box-shadow:0 0 40px rgba(41,231,255,.15)}
+.card h2{font-family:Orbitron;margin:0 0 4px;font-size:20px;letter-spacing:.08em}
+.card .kicker{font-family:Orbitron;font-size:11px;letter-spacing:.22em;color:var(--mag)}
+.card p{font-size:17px;line-height:1.35;margin:10px 0}
+.card .lesson{background:#081022;border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:8px;padding:10px 12px;font-size:16px;line-height:1.35;margin:10px 0}
+.card .hint{background:#1d1606;border:1px solid #4a3a10;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:16px;margin:8px 0}
+.card ol{padding-left:22px;font-size:16px;line-height:1.45}
+.card .btns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.card .btns .big{width:100%;font-size:15px;padding:13px}
+.bigstars{font-size:46px;text-align:center;letter-spacing:8px;color:var(--gold);text-shadow:0 0 18px rgba(255,201,74,.6);margin:6px 0}
+.bigstars .off{color:#2a3352;text-shadow:none}
+.reward{display:flex;justify-content:center;gap:16px;font-family:Orbitron;font-size:14px;margin:4px 0 8px}
+.reward .xp{color:var(--cyan)} .reward .cr{color:var(--gold)}
+.rankup{text-align:center;font-family:Orbitron;color:var(--gold);font-size:15px;margin:8px 0;animation:pulse 1s infinite alternate}
+@keyframes pulse{to{text-shadow:0 0 16px var(--gold)}}
+.math{font-weight:700;color:#fff;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MENU -->
+  <section id="menu" class="screen active">
+    <div class="logo">TRAJECTORY</div>
+    <div class="sub">QUADRATIC STRIKE</div>
+    <div class="rankcard" id="rankcard"></div>
+    <button class="big" data-go="missions">CAMPAIGN</button>
+    <button class="big mag" id="drillBtn">ENDLESS DRILL</button>
+    <button class="big alt" data-go="record">SERVICE RECORD &amp; ARMORY</button>
+    <button class="ghostbtn" id="muteBtn"></button>
+  </section>
+
+  <!-- MISSIONS -->
+  <section id="missions" class="screen">
+    <div class="topbar"><button class="back" data-go="menu">‹ Back</button><h2>CAMPAIGN</h2></div>
+    <div class="scroll" id="missionList"></div>
+  </section>
+
+  <!-- RECORD -->
+  <section id="record" class="screen">
+    <div class="topbar"><button class="back" data-go="menu">‹ Back</button><h2>SERVICE RECORD</h2></div>
+    <div class="scroll" id="recordBody"></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="screen">
+    <div class="hud">
+      <button class="back" id="quitBtn">‹</button>
+      <div class="title"><div class="t1" id="hudT1"></div><div class="t2" id="hudT2"></div></div>
+      <span class="pill" id="hudShots"></span>
+      <span class="pill cr" id="hudCredits"></span>
+    </div>
+    <div class="gamebody">
+      <div class="field">
+        <canvas id="cv"></canvas>
+        <div id="bossbar" class="hidden"><div class="lbl">DREADNOUGHT</div><div class="bar"></div></div>
+        <div id="killfeed"></div>
+        <div id="debrief" class="hidden"></div>
+      </div>
+      <div class="controls">
+        <div id="formTabs"></div>
+        <div id="eq"></div>
+        <div id="pretty"></div>
+        <div class="row actions">
+          <button id="intelBtn">💡 INTEL</button>
+          <button id="scopeBtn">🔭 SCOPE</button>
+          <button id="fireBtn">FIRE</button>
+        </div>
+        <div class="keypad" id="keypad"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="modal" class="hidden"><div class="card" id="modalCard"></div></div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   MATH HELPERS
+   ===================================================================== */
+const FORMS = {
+  factored: { label: 'Factored', skill: 'factored', slots: ['a','p','q'],
+              tpl: ['y = ', 'a', '(x − ', 'p', ')(x − ', 'q', ')'] },
+  vertex:   { label: 'Vertex', skill: 'vertex', slots: ['a','h','k'],
+              tpl: ['y = ', 'a', '(x − ', 'h', ')² + ', 'k'] },
+  standard: { label: 'Standard', skill: 'standard', slots: ['a','b','c'],
+              tpl: ['y = ', 'a', 'x² + ', 'b', 'x + ', 'c'] },
+};
+
+function toStd(form, v) {
+  const a = v.a;
+  if (form === 'factored') return { a, b: -a * (v.p + v.q), c: a * v.p * v.q };
+  if (form === 'vertex')   return { a, b: -2 * a * v.h, c: a * v.h * v.h + v.k };
+  return { a, b: v.b, c: v.c };
+}
+function makeF(s) { return x => s.a * x * x + s.b * x + s.c; }
+
+function fmt(n) {
+  if (!isFinite(n)) return '?';
+  let r = Math.round(n * 100) / 100;
+  if (Object.is(r, -0)) r = 0;
+  return String(r).replace('-', '−');
+}
+function parseNum(str) {
+  if (str == null) return NaN;
+  const s = String(str).replace(/−/g, '-').trim();
+  if (!/^-?(\d+\.?\d*|\.\d+)(\/(\d+\.?\d*|\.\d+))?$/.test(s)) return NaN;
+  const [n, d] = s.split('/');
+  const v = d === undefined ? parseFloat(n) : parseFloat(n) / parseFloat(d);
+  return isFinite(v) ? v : NaN;
+}
+function coefStr(a) { return a === 1 ? '' : a === -1 ? '−' : fmt(a); }
+function shiftStr(p) { return p === 0 ? 'x' : p < 0 ? `(x + ${fmt(-p)})` : `(x − ${fmt(p)})`; }
+function pretty(form, v) {
+  if (form === 'factored') {
+    const a = coefStr(v.a), s1 = shiftStr(v.p), s2 = shiftStr(v.q);
+    return `y = ${a}${s1}${s2}`;
+  }
+  if (form === 'vertex') {
+    let s = `y = ${coefStr(v.a)}${shiftStr(v.h)}²`;
+    if (v.k > 0) s += ` + ${fmt(v.k)}`; else if (v.k < 0) s += ` − ${fmt(-v.k)}`;
+    return s;
+  }
+  let s = 'y = ';
+  const terms = [[v.a, 'x²'], [v.b, 'x'], [v.c, '']];
+  let first = true;
+  for (const [c, x] of terms) {
+    if (c === 0) continue;
+    const mag = Math.abs(c);
+    const body = (mag === 1 && x) ? x : fmt(mag) + x;
+    s += first ? (c < 0 ? '−' : '') + body : (c < 0 ? ' − ' : ' + ') + body;
+    first = false;
+  }
+  return first ? 'y = 0' : s;
+}
+function distPointSeg(t, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const L = dx * dx + dy * dy;
+  let u = L ? ((t.x - a.x) * dx + (t.y - a.y) * dy) / L : 0;
+  u = Math.max(0, Math.min(1, u));
+  const px = a.x + u * dx - t.x, py = a.y + u * dy - t.y;
+  return Math.sqrt(px * px + py * py);
+}
+
+/* =====================================================================
+   SIMULATION (pure, testable)
+   ===================================================================== */
+const WALL_HALF = 0.15, CANNON_TOL = 0.35, HEADSHOT = 0.12;
+function simulate(level, std) {
+  const f = makeF(std), c = level.cannon, dir = level.dir || 1;
+  const res = { path: [], hits: [], misfire: false, endReason: 'out', blocker: null, win: false };
+  const y0 = f(c.x);
+  if (!isFinite(y0) || Math.abs(y0 - c.y) > CANNON_TOL) { res.misfire = true; return res; }
+  const v = level.view, step = 0.01 * dir;
+  let prev = { x: c.x, y: y0 };
+  res.path.push(prev);
+  const hit = new Set();
+  for (let i = 0; i < 40000; i++) {
+    const x = prev.x + step, y = f(x), p = { x, y };
+    res.path.push(p);
+    level.targets.forEach((t, ti) => {
+      if (hit.has(ti)) return;
+      const d = distPointSeg(t, prev, p);
+      if (d <= (t.r || 0.4)) { hit.add(ti); res.hits.push({ ti, d, idx: res.path.length - 1, headshot: d <= HEADSHOT }); }
+    });
+    if (hit.size === level.targets.length) { res.endReason = 'cleared'; break; }
+    let stop = null;
+    for (const w of level.walls || []) {
+      if (Math.abs(x - w.x) <= WALL_HALF && y <= w.h && y >= 0) { stop = ['wall', w]; break; }
+    }
+    if (!stop) for (const b of level.barriers || []) {
+      if (x >= b.x1 && x <= b.x2 && (prev.y - b.y) * (y - b.y) <= 0) { stop = ['barrier', b]; break; }
+    }
+    if (!stop && y < 0 && i > 0) stop = ['ground', null];
+    if (!stop && (x > v.xmax + 0.5 || x < v.xmin - 0.5)) stop = ['out', null];
+    if (stop) { res.endReason = stop[0]; res.blocker = stop[1]; break; }
+    prev = p;
+  }
+  res.win = hit.size === level.targets.length;
+  return res;
+}
+
+/* =====================================================================
+   LEVELS
+   ===================================================================== */
+const CHAPTERS = [
+  { id: 1, skill: 'factored', name: 'BOOT CAMP — FACTORED FORM',
+    blurb: 'y = a(x − p)(x − q). The shot is at ground level (y = 0) at x = p and x = q.' },
+  { id: 2, skill: 'vertex', name: 'APEX OPS — VERTEX FORM',
+    blurb: 'y = a(x − h)² + k. The peak of the shot is the vertex (h, k).' },
+  { id: 3, skill: 'standard', name: 'TOWER WAR — STANDARD FORM',
+    blurb: 'y = ax² + bx + c. c is the launch height at x = 0. The peak is at x = −b / 2a.' },
+  { id: 4, skill: 'discriminant', name: 'LASER GRID — DISCRIMINANT',
+    blurb: 'b² − 4ac tells you how many times the arc crosses a line: 2, 1, or 0.' },
+  { id: 5, skill: 'boss', name: 'BOSS — THE DREADNOUGHT', blurb: 'Every form is unlocked. Pick your weapon.' },
+];
+
+const LEVELS = [
+  { id: 'L1', ch: 1, name: 'First Contact', forms: ['factored'], lock: { a: -0.5 },
+    view: { xmin: -5, xmax: 7, ymin: -1, ymax: 10 },
+    cannon: { x: -3, y: 0 }, targets: [{ x: 5, y: 0, type: 'tank' }],
+    brief: 'An enemy tank is parked at x = 5. Your plasma cannon sits on the ground at x = −3.',
+    lesson: 'In <span class="math">y = a(x − p)(x − q)</span>, the shot is on the ground (<span class="math">y = 0</span>) when <span class="math">x = p</span> or <span class="math">x = q</span>. Those are the <b>roots</b>. Launch from one root and land on the other.',
+    hints: ['The shot starts on the ground and lands on the ground. Where is a(x − p)(x − q) equal to 0?',
+            'y = 0 when x = p or x = q. Your cannon is at x = −3 and the tank is at x = 5.'],
+    walk: ['Roots are the x-values where y = 0.', 'Cannon on the ground at x = −3, so one root is −3.', 'Tank on the ground at x = 5, so the other root is 5.', 'p = −3, q = 5 → y = −0.5(x + 3)(x − 5). Note: x − (−3) becomes x + 3.'],
+    answer: { form: 'factored', a: -0.5, p: -3, q: 5 } },
+
+  { id: 'L2', ch: 1, name: 'Wall Breaker', forms: ['factored'],
+    view: { xmin: -6, xmax: 4, ymin: -1, ymax: 12 },
+    cannon: { x: -4, y: 0 }, targets: [{ x: 2, y: 0, type: 'tank' }], walls: [{ x: -1, h: 7 }],
+    brief: 'A 7-high blast wall sits at x = −1, halfway to the target. This time YOU control a.',
+    lesson: 'The number <span class="math">a</span> stretches the arc. Bigger <span class="math">|a|</span> means taller and skinnier. Negative <span class="math">a</span> makes it open downward, like a shot arcing through the air.',
+    hints: ['Roots first: −4 and 2. Then plug x = −1 into a(x + 4)(x − 2). That height must be more than 7.',
+            'a(−1 + 4)(−1 − 2) = a(3)(−3) = −9a. Solve −9a > 7.'],
+    walk: ['Roots: p = −4, q = 2.', 'Height at the wall: a(3)(−3) = −9a.', 'Need −9a > 7 → a < −0.78.', 'a = −1 gives height 9. Clears the wall. y = −(x + 4)(x − 2).'],
+    answer: { form: 'factored', a: -1, p: -4, q: 2 } },
+
+  { id: 'L3', ch: 1, name: 'Low Ceiling', forms: ['factored'],
+    view: { xmin: -2, xmax: 8, ymin: -1, ymax: 8 },
+    cannon: { x: 0, y: 0 }, targets: [{ x: 6, y: 0, type: 'tank' }], barriers: [{ x1: 1, x2: 5, y: 5 }],
+    brief: 'A laser ceiling hangs at y = 5. Touch it and your plasma gets fried. Flatten the arc.',
+    lesson: 'The peak is always halfway between the two roots. Smaller <span class="math">|a|</span> means a flatter, lower arc.',
+    hints: ['The peak is halfway between 0 and 6, at x = 3. Find the height there in terms of a.',
+            'a(3 − 0)(3 − 6) = −9a. You need 0 < −9a < 5.'],
+    walk: ['Roots: p = 0, q = 6.', 'Peak at x = 3: height = a(3)(−3) = −9a.', 'Need −9a < 5 → a > −0.56 (and still negative).', 'a = −0.5 → peak 4.5. y = −0.5x(x − 6).'],
+    answer: { form: 'factored', a: -0.5, p: 0, q: 6 } },
+
+  { id: 'L4', ch: 1, name: 'Sky Hunter', forms: ['factored'],
+    view: { xmin: -6, xmax: 6, ymin: -1, ymax: 11 },
+    cannon: { x: -4, y: 0 }, targets: [{ x: 0, y: 8, type: 'drone' }, { x: 4, y: 0, type: 'tank' }],
+    brief: 'Double kill: hit the drone hovering at (0, 8) in mid-flight, then land on the tank.',
+    lesson: 'Once you know the roots, any other point on the arc tells you <span class="math">a</span>. Plug in its x and y, then solve.',
+    hints: ['Roots: −4 and 4. Then use the drone\'s point (0, 8) to find a.',
+            '8 = a(0 + 4)(0 − 4) = −16a.'],
+    walk: ['Roots: p = −4, q = 4.', 'Drone at (0, 8): 8 = a(0 + 4)(0 − 4).', '8 = −16a → a = −0.5.', 'y = −0.5(x + 4)(x − 4).'],
+    answer: { form: 'factored', a: -0.5, p: -4, q: 4 } },
+
+  { id: 'L5', ch: 2, name: 'Apex', forms: ['vertex'],
+    view: { xmin: -3, xmax: 5, ymin: -1, ymax: 10 },
+    cannon: { x: -1, y: 0 }, targets: [{ x: 1, y: 8, type: 'drone' }, { x: 3, y: 0, type: 'tank' }],
+    brief: 'The drone at (1, 8) is sitting right at the top of your shot. Make it the peak.',
+    lesson: 'In <span class="math">y = a(x − h)² + k</span>, the vertex (peak) is <span class="math">(h, k)</span>. Then pick <span class="math">a</span> so the arc goes through your cannon.',
+    hints: ['Peak = drone, so h = 1 and k = 8. Now find a using the cannon point (−1, 0).',
+            '0 = a(−1 − 1)² + 8 → 0 = 4a + 8.'],
+    walk: ['Vertex at the drone: h = 1, k = 8.', 'Cannon (−1, 0): 0 = a(−2)² + 8.', '0 = 4a + 8 → a = −2.', 'y = −2(x − 1)² + 8.'],
+    answer: { form: 'vertex', a: -2, h: 1, k: 8 } },
+
+  { id: 'L6', ch: 2, name: 'Mirror Image', forms: ['vertex'],
+    view: { xmin: -7, xmax: 5, ymin: -1, ymax: 12 },
+    cannon: { x: -5, y: 2 }, targets: [{ x: -1, y: 10, type: 'drone' }, { x: 3, y: 2, type: 'turret' }],
+    brief: 'You\'re on a 2-high platform. Enemy turret on a matching platform at (3, 2). Drone at (−1, 10).',
+    lesson: 'Parabolas are <b>symmetric</b>. Two points at the same height sit the same distance from the vertex\'s x.',
+    hints: ['Peak at the drone: h = −1, k = 10. Use your cannon (−5, 2) to find a.',
+            '2 = a(−5 + 1)² + 10 → 2 = 16a + 10.'],
+    walk: ['Vertex: h = −1, k = 10.', 'Cannon (−5, 2): 2 = a(−4)² + 10.', '16a = −8 → a = −0.5.', 'y = −0.5(x + 1)² + 10. By symmetry it also hits (3, 2).'],
+    answer: { form: 'vertex', a: -0.5, h: -1, k: 10 } },
+
+  { id: 'L7', ch: 2, name: 'Thread the Needle', forms: ['vertex'],
+    view: { xmin: -4, xmax: 6, ymin: -1, ymax: 11 },
+    cannon: { x: -2, y: 0 }, targets: [{ x: 0, y: 8, type: 'gate' }, { x: 4, y: 0, type: 'tank' }],
+    brief: 'Fly through the jump gate at (0, 8) and hit the tank at x = 4. The gate is NOT the peak.',
+    lesson: 'Honors move: use <b>symmetry</b> to find h, then set up <b>two equations</b> with two points and solve for <span class="math">a</span> and <span class="math">k</span>.',
+    hints: ['Both ends are on the ground at −2 and 4, so the peak is halfway: h = 1.',
+            'Cannon: 0 = a(−3)² + k = 9a + k. Gate: 8 = a(−1)² + k = a + k. Subtract the equations.'],
+    walk: ['h = (−2 + 4) / 2 = 1.', '(−2, 0): 9a + k = 0.', '(0, 8): a + k = 8.', 'Subtract: 8a = −8 → a = −1, k = 9.', 'y = −(x − 1)² + 9.'],
+    answer: { form: 'vertex', a: -1, h: 1, k: 9 } },
+
+  { id: 'L8', ch: 3, name: 'Tower Defense', forms: ['standard'], lock: { a: -0.5 },
+    view: { xmin: -2, xmax: 8, ymin: -1, ymax: 10 },
+    cannon: { x: 0, y: 6 }, targets: [{ x: 6, y: 0, type: 'tank' }],
+    brief: 'You\'re on a 6-high tower at x = 0. The tank is at (6, 0).',
+    lesson: 'In <span class="math">y = ax² + bx + c</span>, plug in <span class="math">x = 0</span> and you get <span class="math">y = c</span>. So <span class="math">c</span> is the launch height at x = 0.',
+    hints: ['Your cannon is at (0, 6), so c = 6.',
+            'Tank (6, 0): 0 = −0.5(6²) + 6b + 6 → 0 = −18 + 6b + 6.'],
+    walk: ['c = 6 (height at x = 0).', '0 = −0.5(36) + 6b + 6.', '0 = −12 + 6b → b = 2.', 'y = −0.5x² + 2x + 6.'],
+    answer: { form: 'standard', a: -0.5, b: 2, c: 6 } },
+
+  { id: 'L9', ch: 3, name: 'Axis of Symmetry', forms: ['standard'],
+    view: { xmin: -2, xmax: 8, ymin: -1, ymax: 11 },
+    cannon: { x: 0, y: 0 }, targets: [{ x: 3, y: 9, type: 'drone' }, { x: 6, y: 0, type: 'tank' }],
+    brief: 'Drone at the peak (3, 9). Cannon at the origin. No locks. All three coefficients are on you.',
+    lesson: 'The vertex of <span class="math">ax² + bx + c</span> is at <span class="math">x = −b / (2a)</span>. That vertical line is the <b>axis of symmetry</b>.',
+    hints: ['Cannon at (0, 0) → c = 0. Peak at x = 3 → −b / (2a) = 3, so b = −6a.',
+            'Plug the drone (3, 9) in: 9 = 9a + 3b = 9a + 3(−6a).'],
+    walk: ['c = 0.', '−b / (2a) = 3 → b = −6a.', '9 = 9a + 3b = 9a − 18a = −9a → a = −1.', 'b = 6. y = −x² + 6x.'],
+    answer: { form: 'standard', a: -1, b: 6, c: 0 } },
+
+  { id: 'L10', ch: 3, name: 'Triangulate', forms: ['standard'],
+    view: { xmin: -4, xmax: 6, ymin: -1, ymax: 9 },
+    cannon: { x: -2, y: 0 }, targets: [{ x: 0, y: 6, type: 'gate' }, { x: 4, y: 0, type: 'tank' }],
+    brief: 'Three points lock in one parabola: cannon (−2, 0), gate (0, 6), tank (4, 0). Find it in standard form.',
+    lesson: 'Switching forms is a weapon. Write it in factored form first, find <span class="math">a</span>, then <b>expand</b> to get standard form.',
+    hints: ['The gate is on the y-axis, so c = 6. Factored version: y = a(x + 2)(x − 4).',
+            'Plug in (0, 6): 6 = a(2)(−4) → a = −0.75. Expand −0.75(x² − 2x − 8).'],
+    walk: ['Roots −2 and 4: y = a(x + 2)(x − 4).', '(0, 6): 6 = −8a → a = −0.75.', 'Expand: −0.75(x² − 2x − 8) = −0.75x² + 1.5x + 6.', 'a = −0.75 (or −3/4), b = 1.5, c = 6.'],
+    answer: { form: 'standard', a: -0.75, b: 1.5, c: 6 } },
+
+  { id: 'L11', ch: 4, name: 'Tripwire', forms: ['standard'],
+    view: { xmin: -6, xmax: 6, ymin: -1, ymax: 12 },
+    cannon: { x: -4, y: 0 }, targets: [{ x: 4, y: 0, type: 'tank' }],
+    walls: [{ x: 0, h: 7 }], barriers: [{ x1: -6, x2: 6, y: 10 }],
+    brief: 'Clear the 7-high wall at x = 0, but stay under the laser tripwire at y = 10.',
+    lesson: 'Your arc touches the line <span class="math">y = 10</span> only if <span class="math">ax² + bx + c = 10</span> has a real solution. If <span class="math">b² − 4a(c − 10) &lt; 0</span>, there\'s no solution, so you never touch it.',
+    hints: ['Roots at −4 and 4. Expand a(x + 4)(x − 4) = ax² − 16a, so b = 0 and c = −16a.',
+            'With b = 0 the peak is at x = 0 and its height is c. You need 7 < c < 10. Pick a to make that happen.'],
+    walk: ['y = a(x + 4)(x − 4) = ax² + 0x − 16a.', 'Peak height = c = −16a.', 'Need 7 < −16a < 10 → −0.625 < a < −0.4375.', 'a = −0.5, b = 0, c = 8. Discriminant check: 0 − 4(−0.5)(8 − 10) = −4 < 0 ✓'],
+    answer: { form: 'standard', a: -0.5, b: 0, c: 8 } },
+
+  { id: 'L12', ch: 4, name: 'Graze', forms: ['standard'], lock: { a: -0.5, c: 0 },
+    view: { xmin: -1, xmax: 9, ymin: -1, ymax: 10 },
+    cannon: { x: 0, y: 0 }, targets: [{ x: 4, y: 8, type: 'sensor', r: 0.3 }, { x: 8, y: 0, type: 'tank' }],
+    barriers: [{ x1: 2, x2: 6, y: 8.5 }],
+    brief: 'Kiss the sensor at height 8 EXACTLY once, at the very top of your arc. Go higher and the grid at 8.5 fries you.',
+    lesson: 'Touching a line exactly once means <b>one solution</b>, so the <b>discriminant = 0</b>.',
+    hints: ['Set −0.5x² + bx = 8 and move everything to one side: −0.5x² + bx − 8 = 0.',
+            'One solution when b² − 4(−0.5)(−8) = 0 → b² − 16 = 0.'],
+    walk: ['−0.5x² + bx − 8 = 0 must have exactly one solution.', 'Discriminant: b² − 4(−0.5)(−8) = b² − 16.', 'b² − 16 = 0 → b = 4 (positive, so it travels right).', 'y = −0.5x² + 4x. Peak at x = −4 / (2·−0.5) = 4, height 8 ✓'],
+    answer: { form: 'standard', a: -0.5, b: 4, c: 0 } },
+
+  { id: 'L13', ch: 5, name: 'Dreadnought', boss: true, forms: ['vertex', 'factored', 'standard'],
+    view: { xmin: -6, xmax: 8, ymin: -1, ymax: 12.5 },
+    cannon: { x: -4, y: 0 },
+    targets: [{ x: 1, y: 10, type: 'core', r: 0.5 }, { x: 4, y: 6.4, type: 'drone' }, { x: 6, y: 0, type: 'tank' }],
+    walls: [{ x: -2, h: 5 }], barriers: [{ x1: -1, x2: 3, y: 11 }],
+    brief: 'The Dreadnought\'s reactor core is at (1, 10), guarded by an escort drone at (4, 6.4) and a tank at (6, 0). One shot. Take them all.',
+    lesson: 'Pick the form that makes this easiest. The core looks a lot like a peak… and the tank is on the ground.',
+    hints: ['Try vertex form with the peak at the core: h = 1, k = 10. Use your cannon (−4, 0) to find a.',
+            '0 = a(−4 − 1)² + 10 → 25a = −10. Check that the drone at x = 4 is on your arc.'],
+    walk: ['Vertex form, h = 1, k = 10.', 'Cannon: 0 = a(−5)² + 10 → a = −0.4.', 'Check the drone: −0.4(4 − 1)² + 10 = 6.4 ✓', 'Check the tank: −0.4(6 − 1)² + 10 = 0 ✓', 'Wall at x = −2: −0.4(9) + 10 = 6.4 > 5 ✓'],
+    answer: { form: 'vertex', a: -0.4, h: 1, k: 10 } },
+];
+LEVELS.forEach((L, i) => { L.index = i; });
+
+/* ---------- Endless drill generator ---------- */
+function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function genDrill(n) {
+  const form = ['factored', 'vertex', 'standard'][n % 3];
+  for (let tries = 0; tries < 500; tries++) {
+    const a = pick([-0.25, -0.5, -1, -2]);
+    if (form === 'factored') {
+      const p = rnd(-6, 0), q = p + rnd(2, 10);
+      const peak = -a * ((q - p) / 2) ** 2;
+      if (peak < 3 || peak > 11) continue;
+      const targets = [{ x: q, y: 0, type: 'tank' }];
+      const mid = (p + q) / 2;
+      targets.unshift({ x: mid, y: peak, type: 'drone' });
+      return mkDrill(form, { a, p, q }, { x: p, y: 0 }, targets, p - 2, q + 2, peak);
+    }
+    if (form === 'vertex') {
+      const h = rnd(-3, 3), d = rnd(1, 4), k = -a * d * d;
+      if (k < 3 || k > 11) continue;
+      return mkDrill(form, { a, h, k }, { x: h - d, y: 0 }, [{ x: h, y: k, type: 'drone' }, { x: h + d, y: 0, type: 'tank' }], h - d - 2, h + d + 2, k);
+    }
+    const sa = pick([-0.5, -1]), p = rnd(-4, -1), q = rnd(2, 6);
+    const c = sa * p * q, b = -sa * (p + q);
+    const vx = -b / (2 * sa), vy = c - b * b / (4 * sa);
+    if (c > 10 || vy > 11 || vx <= 0.5) continue;
+    return mkDrill(form, { a: sa, b, c }, { x: 0, y: c }, [{ x: vx, y: vy, type: 'drone' }, { x: q, y: 0, type: 'tank' }], -2, q + 2, vy);
+  }
+}
+function mkDrill(form, ans, cannon, targets, xmin, xmax, peak) {
+  const names = { factored: 'Root Strike', vertex: 'Peak Strike', standard: 'Tower Strike' };
+  const lessons = {
+    factored: 'Roots = where y = 0 (cannon and tank). Then use the drone to find a.',
+    vertex: 'The drone is the peak: (h, k). Use your cannon to find a.',
+    standard: 'c = your tower height. Peak x = −b / (2a). Use two points to find a and b.',
+  };
+  return { id: 'D', drill: true, name: names[form], forms: [form], ch: 0,
+    view: { xmin, xmax, ymin: -1, ymax: Math.max(8, Math.ceil(peak + 2)) },
+    cannon, targets, brief: lessons[form], lesson: lessons[form],
+    hints: [lessons[form]], walk: [`Answer: ${pretty(form, ans)}`], answer: Object.assign({ form }, ans) };
+}
+
+/* =====================================================================
+   SAVE / PROGRESSION
+   ===================================================================== */
+const RANKS = [
+  [0, 'Recruit'], [300, 'Private'], [800, 'Corporal'], [1500, 'Sergeant'], [2500, 'Staff Sergeant'],
+  [4000, 'Lieutenant'], [6000, 'Captain'], [9000, 'Commander'], [13000, 'Admiral'],
+];
+const COLORS = [
+  { id: 'cyan', name: 'Cyan', c: '#29e7ff', rank: 0 },
+  { id: 'mag', name: 'Neon', c: '#ff3df2', rank: 2 },
+  { id: 'gold', name: 'Gold', c: '#ffc94a', rank: 3 },
+  { id: 'green', name: 'Toxic', c: '#3dff9a', rank: 5 },
+  { id: 'red', name: 'Inferno', c: '#ff4058', rank: 6 },
+  { id: 'rgb', name: 'Prism', c: 'rgb', rank: 8 },
+];
+const SCOPE_COST = 30;
+const SAVE_KEY = 'trajectory-qs-v1';
+function freshSave() {
+  return { xp: 0, credits: 90, stars: {}, color: 'cyan', muted: false, bestStreak: 0,
+    stats: { factored: { s: 0, w: 0, f: 0 }, vertex: { s: 0, w: 0, f: 0 }, standard: { s: 0, w: 0, f: 0 }, discriminant: { s: 0, w: 0, f: 0 }, boss: { s: 0, w: 0, f: 0 }, drill: { s: 0, w: 0, f: 0 } } };
+}
+let S = freshSave();
+try { const raw = localStorage.getItem(SAVE_KEY); if (raw) S = Object.assign(freshSave(), JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function rankIndex(xp) { let r = 0; RANKS.forEach((R, i) => { if (xp >= R[0]) r = i; }); return r; }
+function plasmaColor(t) {
+  if (S.color === 'rgb') return `hsl(${(t * 0.25) % 360},100%,62%)`;
+  return (COLORS.find(c => c.id === S.color) || COLORS[0]).c;
+}
+
+/* =====================================================================
+   AUDIO (synth, no files)
+   ===================================================================== */
+let AC = null;
+function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); return AC; }
+function tone(type, f0, f1, dur, vol) {
+  if (S.muted) return; const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur);
+}
+function noise(dur, vol, lp) {
+  if (S.muted) return; const a = ac(); if (!a) return;
+  const buf = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
+  const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter();
+  f.type = 'lowpass'; f.frequency.value = lp; s.buffer = buf; g.gain.value = vol;
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+const SFX = {
+  fire() { tone('sawtooth', 900, 120, 0.35, 0.12); noise(0.2, 0.25, 2500); },
+  hit() { noise(0.5, 0.6, 1200); tone('square', 180, 40, 0.4, 0.15); },
+  head() { tone('triangle', 1400, 1800, 0.12, 0.15); setTimeout(() => tone('triangle', 1800, 2200, 0.15, 0.15), 90); },
+  fail() { tone('square', 160, 70, 0.4, 0.1); },
+  click() { tone('triangle', 700, 650, 0.04, 0.05); },
+  win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone('square', f, f, 0.18, 0.08), i * 110)); },
+};
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+/* =====================================================================
+   UI: SCREENS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  if (id === 'menu') renderMenu();
+  if (id === 'missions') renderMissions();
+  if (id === 'record') renderRecord();
+  running = id === 'game';
+  if (running) { resize(); if (!loopOn) { loopOn = true; requestAnimationFrame(loop); } }
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { SFX.click(); show(b.dataset.go); }));
+
+function badgeSVG(ri) {
+  const chev = Math.min(ri, 4), star = ri >= 5;
+  let s = `<svg class="badge" viewBox="0 0 52 52"><defs><linearGradient id="bg${ri}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2a55"/><stop offset="1" stop-color="#0a1022"/></linearGradient></defs>
+    <path d="M26 2 L48 12 L48 30 Q48 44 26 50 Q4 44 4 30 L4 12 Z" fill="url(#bg${ri})" stroke="${ri >= 5 ? '#ffc94a' : '#29e7ff'}" stroke-width="2"/>`;
+  for (let i = 0; i < chev; i++) s += `<path d="M14 ${30 - i * 6} L26 ${24 - i * 6} L38 ${30 - i * 6}" fill="none" stroke="#29e7ff" stroke-width="3" stroke-linecap="round"/>`;
+  if (star) for (let i = 0; i < ri - 4; i++) s += `<text x="${26 + (i - (ri - 5) / 2) * 9}" y="${ri >= 5 && chev ? 14 + 3 : 30}" font-size="10" text-anchor="middle" fill="#ffc94a">★</text>`;
+  return s + '</svg>';
+}
+function renderMenu() {
+  const ri = rankIndex(S.xp), cur = RANKS[ri][0], nxt = RANKS[ri + 1] ? RANKS[ri + 1][0] : null;
+  const pct = nxt ? (S.xp - cur) / (nxt - cur) * 100 : 100;
+  const done = LEVELS.filter(L => S.stars[L.id]).length;
+  $('#rankcard').innerHTML = `${badgeSVG(ri)}<div class="rankinfo"><div class="rankname">${RANKS[ri][1].toUpperCase()}</div>
+    <div class="xpbar"><div style="width:${pct}%"></div></div>
+    <div class="small">${S.xp} XP${nxt ? ` · ${nxt - S.xp} to ${RANKS[ri + 1][1]}` : ' · MAX RANK'} · <span style="color:var(--gold)">${S.credits} ¢</span> · ${done}/${LEVELS.length} missions</div></div>`;
+  $('#muteBtn').textContent = S.muted ? '🔇 Sound off' : '🔊 Sound on';
+}
+$('#muteBtn').addEventListener('click', () => { S.muted = !S.muted; save(); renderMenu(); SFX.click(); });
+
+function unlocked(L) { return L.index === 0 || !!S.stars[LEVELS[L.index - 1].id]; }
+function starStr(n) { return '★'.repeat(n) + '<span style="color:#2a3352">' + '★'.repeat(3 - n) + '</span>'; }
+function renderMissions() {
+  let h = '';
+  for (const ch of CHAPTERS) {
+    h += `<div class="chapter"><h3>${ch.name}</h3><p>${ch.blurb}</p><div class="mgrid">`;
+    LEVELS.filter(L => L.ch === ch.id).forEach(L => {
+      const ok = unlocked(L), st = S.stars[L.id] || 0;
+      h += `<button class="mcard ${ok ? '' : 'locked'} ${L.boss ? 'boss' : ''}" data-lv="${L.index}" ${ok ? '' : 'disabled'}>
+        <div class="num">${L.boss ? 'BOSS' : 'MISSION ' + (L.index + 1)}</div><div class="nm">${ok ? L.name : '🔒 Locked'}</div>
+        <div class="st">${starStr(st)}</div></button>`;
+    });
+    h += '</div></div>';
+  }
+  $('#missionList').innerHTML = h;
+  $('#missionList').querySelectorAll('[data-lv]').forEach(b => b.addEventListener('click', () => { SFX.click(); startLevel(LEVELS[+b.dataset.lv]); }));
+}
+function renderRecord() {
+  const ri = rankIndex(S.xp);
+  const names = { factored: 'Factored form', vertex: 'Vertex form', standard: 'Standard form', discriminant: 'Discriminant', boss: 'Boss fights', drill: 'Endless drill' };
+  let h = `<div class="rankcard" style="width:100%">${badgeSVG(ri)}<div class="rankinfo"><div class="rankname">${RANKS[ri][1].toUpperCase()}</div><div class="small">${S.xp} XP · ${S.credits} credits · best drill streak ${S.bestStreak}</div></div></div>`;
+  h += `<div class="sec">ARMORY: PLASMA COLOR</div><div class="small">Rank up to unlock more.</div><div class="swatches">`;
+  COLORS.forEach(c => {
+    const ok = ri >= c.rank, bg = c.c === 'rgb' ? 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' : c.c;
+    h += `<button class="sw ${S.color === c.id ? 'sel' : ''} ${ok ? '' : 'lock'}" data-col="${c.id}" ${ok ? '' : 'disabled'}><i style="background:${bg};box-shadow:0 0 10px ${c.c === 'rgb' ? '#fff' : c.c}"></i>${ok ? c.name : RANKS[c.rank][1]}</button>`;
+  });
+  h += `</div><div class="sec">SKILL REPORT</div><div class="small">Shots fired, missions cleared, and how often he got it on the first shot. Use it to see which forms need work.</div>`;
+  for (const k in names) {
+    const s = S.stats[k] || { s: 0, w: 0, f: 0 };
+    const acc = s.w ? Math.round(s.f / s.w * 100) + '% first-shot' : '—';
+    h += `<div class="stat"><span>${names[k]}</span><span><b>${s.w}</b> cleared · ${s.s} shots · ${acc}</span></div>`;
+  }
+  h += `<div style="margin-top:26px"><button class="ghostbtn" id="resetBtn">Reset all progress</button></div>`;
+  $('#recordBody').innerHTML = h;
+  $('#recordBody').querySelectorAll('[data-col]').forEach(b => b.addEventListener('click', () => { S.color = b.dataset.col; save(); renderRecord(); SFX.click(); }));
+  $('#resetBtn').addEventListener('click', () => modal(`<div class="kicker">CONFIRM</div><h2>Reset progress?</h2><p>All XP, stars, credits and stats will be wiped.</p>
+    <div class="btns"><button class="big mag" id="mYes">Yes, reset</button><button class="big alt" id="mNo">Cancel</button></div>`,
+    { mYes: () => { const m = S.muted; S = freshSave(); S.muted = m; save(); closeModal(); renderRecord(); }, mNo: closeModal }));
+}
+
+/* ---------- modal ---------- */
+function modal(html, handlers) {
+  $('#modalCard').innerHTML = html; $('#modal').classList.remove('hidden');
+  for (const id in handlers || {}) { const el = document.getElementById(id); if (el) el.addEventListener('click', () => { SFX.click(); handlers[id](); }); }
+}
+function closeModal() { $('#modal').classList.add('hidden'); }
+
+/* =====================================================================
+   GAME STATE
+   ===================================================================== */
+let G = null, running = false, loopOn = false;
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+function startLevel(L, opts = {}) {
+  const form = L.forms[0];
+  G = { L, form, inputs: {}, active: null, shots: 0, misses: 0, hintLevel: 0, walk: false, anim: null,
+        ghost: null, scopeUntil: 0, dead: new Set(), particles: [], floats: [], shake: 0, done: false,
+        drill: !!L.drill, streak: opts.streak || 0, drillN: opts.drillN || 0 };
+  initInputs();
+  $('#killfeed').innerHTML = '';
+  $('#debrief').classList.add('hidden');
+  show('game');
+  updateHUD(); renderControls();
+  const bb = $('#bossbar');
+  if (L.boss) { bb.classList.remove('hidden'); bb.querySelector('.bar').innerHTML = L.targets.map(() => '<i></i>').join(''); }
+  else bb.classList.add('hidden');
+  if (!G.drill || G.drillN === 0) showBrief(true);
+}
+function initInputs() {
+  G.inputs = {};
+  const lock = (G.L.forms.length === 1 && G.L.lock) || {};
+  FORMS[G.form].slots.forEach(k => { G.inputs[k] = lock[k] !== undefined ? fmt(lock[k]) : ''; });
+  G.locked = lock;
+  G.active = FORMS[G.form].slots.find(k => lock[k] === undefined);
+}
+function updateHUD() {
+  const L = G.L;
+  $('#hudT1').textContent = G.drill ? `ENDLESS DRILL · STREAK ${G.streak}` : L.boss ? 'BOSS FIGHT' : `MISSION ${L.index + 1} · ${CHAPTERS[L.ch - 1].name.split(' — ')[1]}`;
+  $('#hudT2').textContent = L.name;
+  $('#hudShots').textContent = `SHOTS ${G.shots}`;
+  $('#hudCredits').textContent = `${S.credits} ¢`;
+  $('#scopeBtn').textContent = `🔭 SCOPE ${SCOPE_COST}¢`;
+}
+
+/* ---------- controls ---------- */
+const KEYS = ['7','8','9','−','⌫','4','5','6','/','.','1','2','3','0','▶'];
+function renderControls() {
+  const L = G.L;
+  const tabs = $('#formTabs');
+  if (L.forms.length > 1) {
+    tabs.classList.remove('hidden');
+    tabs.innerHTML = L.forms.map(f => `<button data-f="${f}" class="${f === G.form ? 'on' : ''}">${FORMS[f].label}</button>`).join('');
+    tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { G.form = b.dataset.f; initInputs(); SFX.click(); renderControls(); }));
+  } else tabs.classList.add('hidden');
+  renderEq();
+  const kp = $('#keypad');
+  if (!kp.dataset.built) {
+    kp.innerHTML = KEYS.map(k => `<button data-k="${k}" class="${'◀▶⌫−/'.includes(k) ? 'fn' : ''}">${k}</button>`).join('');
+    kp.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { pressKey(b.dataset.k); }));
+    kp.dataset.built = '1';
+  }
+}
+function renderEq() {
+  const F = FORMS[G.form];
+  $('#eq').innerHTML = F.tpl.map(part => {
+    if (!F.slots.includes(part)) return `<span>${part}</span>`;
+    const val = G.inputs[part], lock = G.locked[part] !== undefined;
+    const bad = val && isNaN(parseNum(val));
+    return `<button class="slot ${G.active === part ? 'on' : ''} ${lock ? 'lock' : ''} ${bad ? 'bad' : ''}" data-s="${part}">${val ? val.replace('-', '−') : `<span class="ph">${part}</span>`}</button>`;
+  }).join('');
+  $('#eq').querySelectorAll('.slot').forEach(b => b.addEventListener('click', () => {
+    if (G.locked[b.dataset.s] !== undefined) { toast('🔒 Locked for this mission'); return; }
+    G.active = b.dataset.s; SFX.click(); renderEq();
+  }));
+  const v = readValues();
+  $('#pretty').innerHTML = v ? `<b>${pretty(G.form, v)}</b>` : 'Fill in every box, then FIRE';
+  $('#fireBtn').disabled = !v || !!G.anim;
+}
+function readValues() {
+  const out = {};
+  for (const k of FORMS[G.form].slots) { const n = parseNum(G.inputs[k]); if (isNaN(n)) return null; out[k] = n; }
+  return out;
+}
+function pressKey(k) {
+  if (!G || G.anim) return;
+  SFX.click();
+  const slots = FORMS[G.form].slots.filter(s => G.locked[s] === undefined);
+  if (k === '◀' || k === '▶') {
+    let i = slots.indexOf(G.active); i = (i + (k === '▶' ? 1 : -1) + slots.length) % slots.length;
+    G.active = slots[i]; renderEq(); return;
+  }
+  if (!G.active) return;
+  let s = G.inputs[G.active] || '';
+  if (k === '⌫') s = s.slice(0, -1);
+  else if (k === '−') s = s.startsWith('-') ? s.slice(1) : '-' + s;
+  else if (s.replace('-', '').length < 7) s += k;
+  G.inputs[G.active] = s;
+  G.ghostStale = true;
+  renderEq();
+}
+document.addEventListener('keydown', e => {
+  if (!running || !G) return;
+  if (!$('#modal').classList.contains('hidden')) { if (e.key === 'Enter') { const b = $('#modalCard .big'); b && b.click(); } return; }
+  const map = { Backspace: '⌫', '-': '−', ArrowLeft: '◀', ArrowRight: '▶', Tab: '▶' };
+  if (e.key === 'Enter') { e.preventDefault(); fire(); return; }
+  const k = map[e.key] || (/^[0-9./]$/.test(e.key) ? e.key : null);
+  if (k) { e.preventDefault(); pressKey(k); }
+});
+
+let toastT = 0;
+function toast(msg) { G && G.floats.push({ text: msg, x: W / 2, y: H * 0.4, life: 1.4, color: '#ffc94a', size: 18, center: true }); }
+
+/* ---------- intel / brief ---------- */
+function showBrief(first) {
+  const L = G.L;
+  let h = `<div class="kicker">${L.boss ? 'BOSS BRIEFING' : G.drill ? 'DRILL INTEL' : 'MISSION BRIEFING'}</div><h2>${L.name}</h2><p>${L.brief}</p>`;
+  if (!G.drill) h += `<div class="lesson">${L.lesson}</div>`;
+  if (!first) {
+    for (let i = 0; i < G.hintLevel; i++) h += `<div class="hint">💡 ${L.hints[i]}</div>`;
+    if (G.walk) h += `<div class="hint"><b>WALKTHROUGH</b><ol>${L.walk.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+  }
+  h += '<div class="btns">';
+  if (first) h += `<button class="big" id="mGo">DEPLOY</button>`;
+  else {
+    if (G.hintLevel < L.hints.length) h += `<button class="big alt" id="mHint">Get hint ${G.hintLevel + 1} <span class="small">(max ★★ this mission)</span></button>`;
+    if (!G.walk && G.misses >= 3) h += `<button class="big alt" id="mWalk">Show walkthrough <span class="small">(max ★)</span></button>`;
+    else if (!G.walk && !G.drill) h += `<div class="small" style="text-align:center">Walkthrough unlocks after 3 misses (${G.misses}/3)</div>`;
+    h += `<button class="big" id="mGo">BACK TO BATTLE</button>`;
+  }
+  h += '</div>';
+  modal(h, {
+    mGo: closeModal,
+    mHint: () => { G.hintLevel++; showBrief(false); },
+    mWalk: () => { G.walk = true; showBrief(false); },
+  });
+}
+$('#intelBtn').addEventListener('click', () => { SFX.click(); showBrief(false); });
+$('#quitBtn').addEventListener('click', () => { SFX.click(); const d = G && G.drill; G = null; show(d ? 'menu' : 'missions'); });
+$('#scopeBtn').addEventListener('click', () => {
+  if (!G || G.anim) return;
+  const v = readValues();
+  if (!v) { toast('Fill in every box first'); return; }
+  if (S.credits < SCOPE_COST) { toast('Not enough credits. Win missions to earn more.'); SFX.fail(); return; }
+  S.credits -= SCOPE_COST; save(); updateHUD();
+  G.scope = { std: toStd(G.form, v), until: performance.now() + 3000 };
+  tone('sine', 400, 1200, 0.3, 0.08);
+});
+$('#fireBtn').addEventListener('click', fire);
+
+/* ---------- firing ---------- */
+function fire() {
+  if (!G || G.anim || G.done) return;
+  const v = readValues(); if (!v) { toast('Fill in every box first'); return; }
+  ac();
+  const std = toStd(G.form, v);
+  const sim = simulate(G.L, std);
+  G.shots++; updateHUD();
+  const sk = G.drill ? 'drill' : CHAPTERS[G.L.ch - 1].skill;
+  S.stats[sk].s++; save();
+  G.dead = new Set(); G.particles = [];
+  $('#debrief').classList.add('hidden');
+  G.ghost = { std, values: v, form: G.form };
+  G.scope = null;
+  if (G.L.boss) $('#bossbar').querySelectorAll('i').forEach(i => i.classList.remove('dead'));
+  if (sim.misfire) {
+    SFX.fail(); buzz(80); G.shake = 10;
+    const c = G.L.cannon, sp = w2s(c.x, c.y);
+    for (let i = 0; i < 20; i++) G.particles.push(part(sp.x, sp.y, '#ff4058'));
+    G.floats.push({ text: 'MISFIRE', x: sp.x, y: sp.y - 30, life: 1.3, color: '#ff4058', size: 22 });
+    onMiss(sim, std, v);
+    return;
+  }
+  SFX.fire(); buzz(20);
+  // precompute screen-space path for animation
+  const pts = sim.path.map(p => w2s(p.x, p.y));
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  G.anim = { sim, std, v, pts, cum, t0: performance.now(), speed: Math.max(500, W * 1.15), nextHit: 0, idx: 0 };
+  renderEq();
+}
+function part(x, y, color, spd = 1) {
+  const a = Math.random() * Math.PI * 2, s = (40 + Math.random() * 260) * spd;
+  return { x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 60, life: 0.5 + Math.random() * 0.6, max: 1.1, color, size: 1.5 + Math.random() * 3 };
+}
+function targetName(t) { return { tank: 'Tank', drone: 'Drone', turret: 'Turret', gate: 'Jump Gate', sensor: 'Sensor', core: 'Reactor Core' }[t.type] || 'Target'; }
+function killfeed(html) {
+  const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = html;
+  const kf = $('#killfeed'); kf.prepend(el); while (kf.children.length > 4) kf.lastChild.remove();
+  setTimeout(() => el.remove(), 4500);
+}
+function stepAnim(now) {
+  const A = G.anim; if (!A) return;
+  const dist = (now - A.t0) / 1000 * A.speed;
+  while (A.idx < A.pts.length - 1 && A.cum[A.idx + 1] <= dist) A.idx++;
+  // trigger hits
+  while (A.nextHit < A.sim.hits.length && A.sim.hits[A.nextHit].idx <= A.idx) {
+    const h = A.sim.hits[A.nextHit++], t = G.L.targets[h.ti], sp = w2s(t.x, t.y);
+    G.dead.add(h.ti);
+    const big = t.type === 'core';
+    for (let i = 0; i < (big ? 70 : 40); i++) G.particles.push(part(sp.x, sp.y, i % 3 ? plasmaColor(now) : '#ffb347', big ? 1.6 : 1));
+    G.shake = big ? 18 : 9;
+    SFX.hit(); buzz(big ? [60, 40, 90] : 50);
+    const youTag = `<span class="y">YOU</span>`;
+    if (h.headshot) {
+      SFX.head();
+      G.floats.push({ text: 'CRITICAL HIT +50', x: sp.x, y: sp.y - 26, life: 1.4, color: '#ffc94a', size: 18 });
+      killfeed(`${youTag} ⟶ <span class="hs">✸ CRIT</span> ⟶ <span class="e">${targetName(t)}</span>`);
+    } else {
+      G.floats.push({ text: t.type === 'gate' || t.type === 'sensor' ? 'THROUGH +100' : 'HIT +100', x: sp.x, y: sp.y - 24, life: 1.1, color: '#fff', size: 16 });
+      killfeed(`${youTag} ⟶ ✦ ⟶ <span class="e">${targetName(t)}</span>`);
+    }
+    G.floats.push({ text: '✕', x: sp.x, y: sp.y, life: 0.35, color: '#fff', size: 34, center: true, marker: true });
+    if (G.L.boss) $('#bossbar').querySelectorAll('i')[h.ti].classList.add('dead');
+  }
+  if (A.idx >= A.pts.length - 1) {
+    const end = A.pts[A.pts.length - 1];
+    if (A.sim.endReason !== 'cleared' && A.sim.endReason !== 'out') {
+      for (let i = 0; i < 18; i++) G.particles.push(part(end.x, end.y, A.sim.endReason === 'barrier' ? '#ff4058' : '#9fb3e6', 0.6));
+      if (A.sim.endReason === 'barrier') { SFX.fail(); G.floats.push({ text: 'ZAPPED', x: end.x, y: end.y - 20, life: 1.1, color: '#ff4058', size: 18 }); }
+      else if (A.sim.endReason === 'wall') { noise(0.25, 0.4, 600); G.floats.push({ text: 'BLOCKED', x: end.x, y: end.y - 20, life: 1.1, color: '#ff4058', size: 18 }); }
+    }
+    const sim = A.sim, std = A.std, v = A.v;
+    G.anim = null;
+    if (sim.win) setTimeout(() => onWin(sim), 700);
+    else setTimeout(() => onMiss(sim, std, v), 350);
+    renderEq();
+  }
+}
+
+/* ---------- outcomes ---------- */
+function onMiss(sim, std, v) {
+  if (!G) return;
+  G.misses++;
+  if (G.drill) { G.streak = 0; updateHUD(); }
+  const L = G.L, f = makeF(std), lines = [];
+  if (sim.misfire) {
+    lines.push(`<b>Misfire.</b> At x = ${fmt(L.cannon.x)} your arc is at y = ${fmt(f(L.cannon.x))}, but your cannon sits at y = ${fmt(L.cannon.y)}. The arc has to pass through your cannon.`);
+  } else if (sim.endReason === 'wall') {
+    const w = sim.blocker; lines.push(`<b>Blocked.</b> At the wall (x = ${fmt(w.x)}) your shot was only at y = ${fmt(f(w.x))}. The wall is ${fmt(w.h)} high.`);
+  } else if (sim.endReason === 'barrier') {
+    const b = sim.blocker, vx = -std.b / (2 * std.a);
+    lines.push(`<b>Zapped</b> by the laser at y = ${fmt(b.y)}. Your arc climbs to y = ${fmt(f(vx))}.`);
+  }
+  if (!sim.misfire) {
+    const hitIdx = new Set(sim.hits.map(h => h.ti));
+    L.targets.forEach((t, i) => {
+      if (hitIdx.has(i)) return;
+      lines.push(`Missed the ${targetName(t).toLowerCase()} at (${fmt(t.x)}, ${fmt(t.y)}). At x = ${fmt(t.x)} your arc is at y = ${fmt(f(t.x))}.`);
+    });
+  }
+  if (std.a > 0) lines.push(`Your a is positive, so the parabola opens <b>up</b> like a U. A shot that arcs over needs a <b>negative</b> a.`);
+  else if (std.a === 0) lines.push(`a = 0 makes a straight line, not a parabola.`);
+  else {
+    const vx = -std.b / (2 * std.a), vy = f(vx), D = std.b * std.b - 4 * std.a * std.c;
+    let s = `Your arc: peak at (${fmt(vx)}, ${fmt(vy)})`;
+    if (D >= 0) { const r1 = (-std.b + Math.sqrt(D)) / (2 * std.a), r2 = (-std.b - Math.sqrt(D)) / (2 * std.a); s += `, ground level (y = 0) at x = ${fmt(Math.min(r1, r2))} and x = ${fmt(Math.max(r1, r2))}`; }
+    lines.push(s + '.');
+  }
+  let h = `<button class="x" id="dbx">✕</button><h4>DEBRIEF · SHOT ${G.shots}</h4><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
+  if (G.misses >= 3 && !G.walk) h += `<button class="walk" id="dbw">💡 Walkthrough unlocked</button>`;
+  else if (G.misses >= 2 && G.hintLevel === 0) h += `<button class="walk" id="dbw">💡 Need a hint?</button>`;
+  const d = $('#debrief'); d.innerHTML = h; d.classList.remove('hidden');
+  $('#dbx').addEventListener('click', () => d.classList.add('hidden'));
+  const w = $('#dbw'); if (w) w.addEventListener('click', () => showBrief(false));
+  if (G.drill && G.misses >= 3 && !G.walk) { G.walk = true; }
+}
+function onWin(sim) {
+  if (!G) return;
+  G.done = true;
+  SFX.win();
+  const L = G.L, sk = G.drill ? 'drill' : CHAPTERS[L.ch - 1].skill;
+  S.stats[sk].w++; if (G.shots === 1) S.stats[sk].f++;
+  const before = rankIndex(S.xp);
+  const crits = sim.hits.filter(h => h.headshot).length;
+  let stars = G.shots === 1 ? 3 : G.shots <= 3 ? 2 : 1;
+  if (G.hintLevel > 0) stars = Math.min(stars, 2);
+  if (G.walk) stars = 1;
+  let xp, cr;
+  if (G.drill) {
+    G.streak++; S.bestStreak = Math.max(S.bestStreak, G.streak);
+    const mult = Math.min(1 + G.streak * 0.25, 3);
+    xp = Math.round((G.shots === 1 ? 80 : 40) * mult + crits * 25); cr = 10 + crits * 5;
+  } else {
+    const prev = S.stars[L.id] || 0;
+    const firstClear = !prev;
+    xp = (firstClear ? 100 * stars : 25 * stars) + crits * 50 + (L.boss && firstClear ? 400 : 0);
+    cr = (firstClear ? 25 : 10) + crits * 10 + (L.boss && firstClear ? 100 : 0);
+    S.stars[L.id] = Math.max(prev, stars);
+  }
+  S.xp += xp; S.credits += cr; save(); updateHUD();
+  const after = rankIndex(S.xp);
+  let h = `<div class="kicker">${G.drill ? 'TARGETS DOWN · STREAK ' + G.streak : L.boss ? 'DREADNOUGHT DESTROYED' : 'MISSION COMPLETE'}</div><h2>${L.name}</h2>`;
+  if (!G.drill) h += `<div class="bigstars">${'★'.repeat(stars)}<span class="off">${'★'.repeat(3 - stars)}</span></div>`;
+  h += `<div class="reward"><span class="xp">+${xp} XP</span><span class="cr">+${cr} ¢</span>${crits ? `<span style="color:var(--gold)">${crits}× CRIT</span>` : ''}</div>`;
+  h += `<p style="text-align:center;font-size:16px;color:var(--dim)">${G.shots === 1 ? 'First-shot kill.' : `Took ${G.shots} shots.`} Winning equation:<br><span class="math" style="color:var(--cyan)">${pretty(G.ghost.form, G.ghost.values)}</span></p>`;
+  if (after > before) {
+    h += `<div class="rankup">▲ PROMOTED TO ${RANKS[after][1].toUpperCase()} ▲</div>`;
+    const col = COLORS.find(c => c.rank === after);
+    if (col) h += `<div class="small" style="text-align:center">New plasma color unlocked in the Armory: <b style="color:${col.c === 'rgb' ? '#fff' : col.c}">${col.name}</b></div>`;
+  }
+  h += '<div class="btns">';
+  const next = !G.drill && LEVELS[L.index + 1];
+  if (G.drill) h += `<button class="big mag" id="mNext">NEXT TARGET</button>`;
+  else if (next) h += `<button class="big" id="mNext">NEXT MISSION</button>`;
+  else h += `<button class="big mag" id="mDrill">CAMPAIGN CLEAR: TRY ENDLESS DRILL</button>`;
+  if (!G.drill && stars < 3) h += `<button class="big alt" id="mRetry">Replay for ★★★</button>`;
+  h += `<button class="big alt" id="mMenu">${G.drill ? 'End drill' : 'Mission list'}</button></div>`;
+  const g = G;
+  modal(h, {
+    mNext: () => { closeModal(); g.drill ? startLevel(genDrill(g.drillN + 1), { streak: g.streak, drillN: g.drillN + 1 }) : startLevel(next); },
+    mDrill: () => { closeModal(); startDrill(); },
+    mRetry: () => { closeModal(); startLevel(L); },
+    mMenu: () => { closeModal(); G = null; show(g.drill ? 'menu' : 'missions'); },
+  });
+}
+function startDrill() { startLevel(genDrill(0), { streak: 0, drillN: 0 }); }
+$('#drillBtn').addEventListener('click', () => { SFX.click(); startDrill(); });
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const PAD = { l: 30, r: 10, t: 12, b: 22 };
+function resize() {
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', () => { if (running) resize(); });
+function w2s(x, y) {
+  const v = G.L.view, pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b;
+  return { x: PAD.l + (x - v.xmin) / (v.xmax - v.xmin) * pw, y: PAD.t + (v.ymax - y) / (v.ymax - v.ymin) * ph };
+}
+const STARS = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), s: Math.random() * 1.4 + 0.3, tw: Math.random() * 6 }));
+let lastT = 0;
+function loop(now) {
+  if (!running || !G) { loopOn = false; return; }
+  const dt = Math.min(0.05, (now - lastT) / 1000 || 0); lastT = now;
+  if (G.anim) stepAnim(now);
+  draw(now, dt);
+  requestAnimationFrame(loop);
+}
+function draw(now, dt) {
+  const L = G.L, v = L.view;
+  ctx.save();
+  if (G.shake > 0.3) { ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake); G.shake *= 0.86; } else G.shake = 0;
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#070b1c'); bg.addColorStop(1, '#0b1430');
+  ctx.fillStyle = bg; ctx.fillRect(-20, -20, W + 40, H + 40);
+  // planet
+  const pg = ctx.createRadialGradient(W * 0.82, H * 0.18, 4, W * 0.82, H * 0.18, Math.min(W, H) * 0.22);
+  pg.addColorStop(0, 'rgba(255,61,242,.28)'); pg.addColorStop(1, 'rgba(255,61,242,0)');
+  ctx.fillStyle = pg; ctx.fillRect(0, 0, W, H);
+  for (const s of STARS) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(now / 900 + s.tw); ctx.fillStyle = '#cfe0ff'; ctx.fillRect(s.x * W, s.y * H, s.s, s.s); }
+  ctx.globalAlpha = 1;
+
+  // grid
+  const o = w2s(0, 0), pw = W - PAD.l - PAD.r;
+  const unit = pw / (v.xmax - v.xmin);
+  ctx.lineWidth = 1;
+  ctx.font = '600 11px Rajdhani, sans-serif';
+  const xStep = unit < 22 ? 2 : 1;
+  for (let x = Math.ceil(v.xmin); x <= v.xmax; x++) {
+    const p = w2s(x, 0);
+    ctx.strokeStyle = x === 0 ? 'rgba(41,231,255,.45)' : 'rgba(80,110,180,.16)';
+    ctx.beginPath(); ctx.moveTo(p.x, PAD.t); ctx.lineTo(p.x, H - PAD.b); ctx.stroke();
+    if (x % xStep === 0) { ctx.fillStyle = '#6f80a8'; ctx.textAlign = 'center'; ctx.fillText(fmt(x), p.x, H - 7); }
+  }
+  const yUnit = (H - PAD.t - PAD.b) / (v.ymax - v.ymin);
+  const yStep = yUnit < 18 ? 2 : 1;
+  for (let y = Math.ceil(v.ymin); y <= v.ymax; y++) {
+    const p = w2s(0, y);
+    ctx.strokeStyle = y === 0 ? 'rgba(41,231,255,.0)' : 'rgba(80,110,180,.16)';
+    ctx.beginPath(); ctx.moveTo(PAD.l, p.y); ctx.lineTo(W - PAD.r, p.y); ctx.stroke();
+    if (y % yStep === 0 && y >= 0) { ctx.fillStyle = '#6f80a8'; ctx.textAlign = 'right'; ctx.fillText(fmt(y), PAD.l - 6, p.y + 4); }
+  }
+  // ground
+  const gy = o.y;
+  const gg = ctx.createLinearGradient(0, gy, 0, H);
+  gg.addColorStop(0, '#16213f'); gg.addColorStop(1, '#0a0f22');
+  ctx.fillStyle = gg; ctx.fillRect(0, gy, W, H - gy);
+  ctx.strokeStyle = '#29e7ff'; ctx.shadowColor = '#29e7ff'; ctx.shadowBlur = 10; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); ctx.shadowBlur = 0;
+  ctx.fillStyle = '#6f80a8'; ctx.textAlign = 'right'; ctx.fillText('0', PAD.l - 6, gy + 4);
+
+  // walls
+  for (const w of L.walls || []) {
+    const a = w2s(w.x - WALL_HALF, w.h), b = w2s(w.x + WALL_HALF, 0);
+    const ww = Math.max(8, b.x - a.x), cx = (a.x + b.x) / 2;
+    ctx.fillStyle = '#2a3150'; ctx.fillRect(cx - ww / 2, a.y, ww, b.y - a.y);
+    ctx.save(); ctx.beginPath(); ctx.rect(cx - ww / 2, a.y, ww, b.y - a.y); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,201,74,.55)'; ctx.lineWidth = 3;
+    for (let y = a.y - ww; y < b.y; y += 12) { ctx.beginPath(); ctx.moveTo(cx - ww / 2, y + ww); ctx.lineTo(cx + ww / 2, y); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = '#ffc94a'; ctx.lineWidth = 2; ctx.strokeRect(cx - ww / 2, a.y, ww, b.y - a.y);
+    label(`wall h = ${fmt(w.h)}`, cx, a.y - 8, '#ffc94a');
+  }
+  // barriers
+  for (const br of L.barriers || []) {
+    const a = w2s(br.x1, br.y), b = w2s(br.x2, br.y);
+    ctx.strokeStyle = '#ff4058'; ctx.shadowColor = '#ff4058'; ctx.shadowBlur = 14;
+    ctx.lineWidth = 2 + Math.sin(now / 60) * 0.8;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ff4058'; ctx.fillRect(a.x - 3, a.y - 5, 6, 10); ctx.fillRect(b.x - 3, b.y - 5, 6, 10);
+    label(`laser y = ${fmt(br.y)}`, Math.min(b.x - 40, Math.max(a.x + 40, (a.x + b.x) / 2)), a.y - 8, '#ff4058');
+  }
+
+  // scope preview
+  const pc = plasmaColor(now);
+  if (G.scope && now < G.scope.until) {
+    ctx.globalAlpha = Math.min(1, (G.scope.until - now) / 600) * 0.7;
+    drawCurve(G.scope.std, pc, [6, 6], 2);
+    ctx.globalAlpha = 1;
+  }
+  // ghost of last shot (full curve) when idle
+  if (G.ghost && !G.anim && !G.done) { ctx.globalAlpha = 0.28; drawCurve(G.ghost.std, '#9fb3e6', [3, 6], 1.5); ctx.globalAlpha = 1; }
+
+  // targets
+  L.targets.forEach((t, i) => drawTarget(t, G.dead.has(i), now));
+
+  // cannon
+  drawCannon(now, pc);
+
+  // projectile
+  if (G.anim) {
+    const A = G.anim, i = A.idx;
+    ctx.lineCap = 'round';
+    for (let k = Math.max(1, i - 60); k <= i; k++) {
+      const p0 = A.pts[k - 1], p1 = A.pts[k];
+      ctx.globalAlpha = (k - (i - 60)) / 60;
+      ctx.strokeStyle = pc; ctx.lineWidth = 4 * ctx.globalAlpha + 1;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    const p = A.pts[i];
+    ctx.fillStyle = '#fff'; ctx.shadowColor = pc; ctx.shadowBlur = 24;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    if (Math.random() < 0.6) G.particles.push({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 40, vy: (Math.random() - 0.5) * 40, life: 0.35, max: 0.35, color: pc, size: 2 });
+  }
+
+  // particles
+  for (const q of G.particles) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 260 * dt; q.vx *= 0.98; }
+  G.particles = G.particles.filter(q => q.life > 0);
+  for (const q of G.particles) { ctx.globalAlpha = Math.max(0, q.life / (q.max || 1)); ctx.fillStyle = q.color; ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size); }
+  ctx.globalAlpha = 1;
+  // floating text
+  for (const f of G.floats) { f.life -= dt; if (!f.marker) f.y -= 28 * dt; }
+  G.floats = G.floats.filter(f => f.life > 0);
+  ctx.textAlign = 'center';
+  for (const f of G.floats) {
+    ctx.globalAlpha = Math.min(1, f.life * 2);
+    ctx.font = `${f.marker ? '400' : '900'} ${f.size}px ${f.marker ? 'Rajdhani' : 'Orbitron'}, sans-serif`;
+    ctx.fillStyle = f.color; ctx.shadowColor = '#000'; ctx.shadowBlur = 6;
+    ctx.fillText(f.text, Math.max(70, Math.min(W - 70, f.x)), f.y); ctx.shadowBlur = 0;
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function label(text, x, y, color) {
+  ctx.font = '700 11px Rajdhani, sans-serif'; ctx.textAlign = 'center';
+  const w = ctx.measureText(text).width + 8;
+  ctx.fillStyle = 'rgba(5,7,15,.75)'; ctx.fillRect(x - w / 2, y - 10, w, 14);
+  ctx.fillStyle = color; ctx.fillText(text, x, y + 1);
+}
+function drawCurve(std, color, dash, lw) {
+  const v = G.L.view, f = makeF(std);
+  ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath();
+  let started = false;
+  for (let x = v.xmin; x <= v.xmax; x += (v.xmax - v.xmin) / 300) {
+    const y = f(x); if (!isFinite(y) || y > v.ymax + 50 || y < v.ymin - 50) { started = false; continue; }
+    const p = w2s(x, y); started ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); started = true;
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function drawTarget(t, dead, now) {
+  const p = w2s(t.x, t.y);
+  const g = w2s(t.x, 0);
+  // platforms under raised ground units
+  if ((t.type === 'turret' || t.type === 'tank') && t.y > 0) { ctx.fillStyle = '#1d2747'; ctx.fillRect(p.x - 12, p.y + 8, 24, g.y - p.y - 8); ctx.strokeStyle = '#3a4a7a'; ctx.strokeRect(p.x - 12, p.y + 8, 24, g.y - p.y - 8); }
+  ctx.save(); ctx.translate(p.x, p.y);
+  if (dead) {
+    ctx.fillStyle = '#2a2230'; ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.arc(0, 2, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(now / 80); ctx.fillStyle = '#ff7a2a';
+    ctx.beginPath(); ctx.arc(0, -2 - (now / 40 % 8), 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore(); return;
+  }
+  const pulse = 0.6 + 0.4 * Math.sin(now / 250);
+  ctx.shadowColor = '#ff4058'; ctx.shadowBlur = 12 * pulse;
+  if (t.type === 'tank' || t.type === 'turret') {
+    ctx.fillStyle = '#ff4058';
+    ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.lineTo(11, -8); ctx.lineTo(-11, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c42a40'; ctx.beginPath(); ctx.arc(0, -9, 6, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#ff4058'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-3, -11); ctx.lineTo(-14, -16); ctx.stroke();
+  } else if (t.type === 'drone') {
+    ctx.fillStyle = '#ff4058';
+    ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(9, 0); ctx.lineTo(0, 8); ctx.lineTo(-9, 0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ff9aa8'; ctx.lineWidth = 2;
+    const sp = now / 30;
+    ctx.beginPath(); ctx.moveTo(-16, -6 + Math.sin(sp) * 2); ctx.lineTo(-8, -6); ctx.moveTo(16, -6 + Math.cos(sp) * 2); ctx.lineTo(8, -6); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+  } else if (t.type === 'gate' || t.type === 'sensor') {
+    const r = t.type === 'gate' ? 13 : 9;
+    ctx.strokeStyle = t.type === 'gate' ? '#3dff9a' : '#ffc94a'; ctx.shadowColor = ctx.strokeStyle; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.55, r, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 0.3 * pulse; ctx.fillStyle = ctx.strokeStyle; ctx.fill(); ctx.globalAlpha = 1;
+  } else if (t.type === 'core') {
+    // dreadnought hull
+    ctx.shadowBlur = 0; ctx.fillStyle = '#2a1424'; ctx.strokeStyle = '#7a2a4a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-70, -10); ctx.lineTo(-40, -26); ctx.lineTo(40, -26); ctx.lineTo(80, -6); ctx.lineTo(40, 10); ctx.lineTo(-40, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowColor = '#ff4058'; ctx.shadowBlur = 20 * pulse;
+    ctx.fillStyle = '#ff4058'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  // crosshair-ish marker at exact point + coordinate label
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.stroke();
+  const below = t.y > 0 && t.type !== 'tank' && t.type !== 'turret';
+  label(`(${fmt(t.x)}, ${fmt(t.y)})`, p.x, below ? p.y + (t.type === 'core' ? 26 : 22) : p.y - 26, '#ffb3bd');
+}
+function drawCannon(now, pc) {
+  const c = G.L.cannon, p = w2s(c.x, c.y), g = w2s(c.x, 0);
+  if (c.y > 0) {
+    ctx.fillStyle = '#1d2747'; ctx.fillRect(p.x - 13, p.y + 6, 26, g.y - p.y - 6);
+    ctx.strokeStyle = '#29e7ff55'; ctx.strokeRect(p.x - 13, p.y + 6, 26, g.y - p.y - 6);
+  }
+  // barrel angle from current equation's slope at the cannon (if valid)
+  let ang = -Math.PI / 4;
+  const v = readValues();
+  if (v) {
+    const s = toStd(G.form, v), slope = 2 * s.a * c.x + s.b;
+    const pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b, vw = G.L.view;
+    const sx = pw / (vw.xmax - vw.xmin), sy = ph / (vw.ymax - vw.ymin);
+    ang = Math.atan2(-slope * sy, sx);
+    ang = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.2, ang));
+  }
+  ctx.save(); ctx.translate(p.x, p.y);
+  ctx.save(); ctx.rotate(ang);
+  ctx.fillStyle = '#9fb3e6'; ctx.fillRect(0, -3.5, 22, 7);
+  ctx.fillStyle = pc; ctx.shadowColor = pc; ctx.shadowBlur = 10; ctx.fillRect(18, -4.5, 5, 9); ctx.shadowBlur = 0;
+  ctx.restore();
+  ctx.fillStyle = '#3a4a7a'; ctx.beginPath(); ctx.arc(0, 0, 10, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#5b6fa8'; ctx.fillRect(-14, 0, 28, 6);
+  ctx.fillStyle = pc; ctx.fillRect(-14, 5, 28, 2);
+  ctx.restore();
+  label(`YOU (${fmt(c.x)}, ${fmt(c.y)})`, p.x, c.y > 0 ? p.y - 20 : g.y + 14, '#29e7ff');
+}
+
+/* expose for automated tests */
+window.__traj = { LEVELS, simulate, toStd, genDrill, pretty, parseNum };
+renderMenu();
+</script>
+</body>
+</html>
